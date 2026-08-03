@@ -7,6 +7,8 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ### Fixed
 
+- Bound reachability analysis by the compiled state count while continuing
+  past unknown destinations and reporting every disconnected state.
 - Reuse and reset an injected PostgreSQL service during repository
   verification while retaining Testcontainers fallback for standalone runs.
 

@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -103,5 +104,76 @@ func TestStoreSnapshotProgressAndHistoryPaging(t *testing.T) {
 	loaded, err := store.LoadSnapshot(ctx, "one")
 	if err != nil || loaded.State != "b" {
 		t.Fatalf("snapshot = %#v, %v", loaded, err)
+	}
+}
+
+func TestStoreHistoryAndSnapshotInclusiveBoundaries(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	store := New[string, string]()
+	current := "state-0"
+	if err := store.Create(ctx, statemachine.Instance[string]{
+		ID: "one", State: current, DefinitionVersion: "v1",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for index := range statemachine.DefaultHistoryPageLimit + 1 {
+		next := fmt.Sprintf("state-%d", index+1)
+		_, _, err := store.CompareAndTransition(ctx, "one", uint64(index), statemachine.Result[string, string]{
+			DefinitionVersion: "v1", Previous: current, Next: next,
+			Event: "advance", TransitionID: "advance",
+		}, time.Unix(int64(index+1), 0))
+		if err != nil {
+			t.Fatalf("transition %d: %v", index+1, err)
+		}
+		current = next
+	}
+
+	defaultPage, err := store.History(ctx, "one", 0, 0)
+	if err != nil {
+		t.Fatalf("default history page: %v", err)
+	}
+	if len(defaultPage) != statemachine.DefaultHistoryPageLimit ||
+		defaultPage[0].Sequence != 1 ||
+		defaultPage[len(defaultPage)-1].Sequence != uint64(statemachine.DefaultHistoryPageLimit) {
+		t.Fatalf("default history page = %#v", defaultPage)
+	}
+
+	page, err := store.History(ctx, "one", 1, 2)
+	if err != nil {
+		t.Fatalf("history after sequence 1: %v", err)
+	}
+	if len(page) != 2 || page[0].Sequence != 2 || page[1].Sequence != 3 {
+		t.Fatalf("history after sequence 1 = %#v", page)
+	}
+	maximumPage, err := store.History(ctx, "one", 0, statemachine.MaxHistoryPageLimit)
+	if err != nil {
+		t.Fatalf("history at maximum page limit: %v", err)
+	}
+	if len(maximumPage) != statemachine.DefaultHistoryPageLimit+1 {
+		t.Fatalf("history at maximum page limit has %d entries", len(maximumPage))
+	}
+
+	lastLockVersion := uint64(statemachine.DefaultHistoryPageLimit + 1)
+	if err := store.SaveSnapshot(ctx, statemachine.Snapshot[string]{
+		InstanceID: "one", State: current, DefinitionVersion: "", LockVersion: lastLockVersion,
+	}); !errors.Is(err, statemachine.ErrInvalidStoreInput) {
+		t.Fatalf("empty snapshot definition version error = %v", err)
+	}
+	if err := store.SaveSnapshot(ctx, statemachine.Snapshot[string]{
+		InstanceID: "one", State: current, DefinitionVersion: "v1", LockVersion: lastLockVersion + 1,
+	}); !errors.Is(err, statemachine.ErrInvalidStoreInput) {
+		t.Fatalf("snapshot beyond instance lock error = %v", err)
+	}
+
+	snapshot := statemachine.Snapshot[string]{
+		InstanceID: "one", State: current, DefinitionVersion: "v1", LockVersion: lastLockVersion,
+	}
+	if err := store.SaveSnapshot(ctx, snapshot); err != nil {
+		t.Fatalf("save current snapshot: %v", err)
+	}
+	if err := store.SaveSnapshot(ctx, snapshot); err != nil {
+		t.Fatalf("save equal snapshot: %v", err)
 	}
 }

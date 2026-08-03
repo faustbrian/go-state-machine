@@ -48,6 +48,34 @@ func relayOptions(store Store, publisher Publisher) RelayOptions {
 	}
 }
 
+func TestRelayRejectsEachMissingDependency(t *testing.T) {
+	t.Parallel()
+
+	valid := relayOptions(
+		&internalStore{},
+		internalPublisher(func(context.Context, Message) error { return nil }),
+	)
+	tests := []struct {
+		name   string
+		mutate func(*RelayOptions)
+	}{
+		{name: "store", mutate: func(options *RelayOptions) { options.Store = nil }},
+		{name: "publisher", mutate: func(options *RelayOptions) { options.Publisher = nil }},
+		{name: "clock", mutate: func(options *RelayOptions) { options.Clock = nil }},
+		{name: "classifier", mutate: func(options *RelayOptions) { options.Classify = nil }},
+		{name: "retry delay", mutate: func(options *RelayOptions) { options.RetryDelay = nil }},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			options := valid
+			test.mutate(&options)
+			if _, err := NewRelay(options); !errors.Is(err, ErrInvalidOptions) {
+				t.Fatalf("NewRelay() error = %v, want ErrInvalidOptions", err)
+			}
+		})
+	}
+}
+
 func TestRelayRemainingConstructionAndOperationErrors(t *testing.T) {
 	t.Parallel()
 

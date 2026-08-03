@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 )
 
 // State is the set of values accepted as machine states.
@@ -413,11 +414,11 @@ func (machine *Machine[S, E, C]) Transition(ctx context.Context, current S, even
 		}
 	}
 
-	effects := make([]Effect, 0,
-		len(machine.states[current].Exit)+len(transition.Effects)+len(machine.states[transition.To].Entry))
-	effects = append(effects, cloneEffects(machine.states[current].Exit)...)
-	effects = append(effects, cloneEffects(transition.Effects)...)
-	effects = append(effects, cloneEffects(machine.states[transition.To].Entry)...)
+	effects := slices.Concat(
+		cloneEffects(machine.states[current].Exit),
+		cloneEffects(transition.Effects),
+		cloneEffects(machine.states[transition.To].Entry),
+	)
 
 	return Result[S, E]{
 		DefinitionVersion: machine.version,
@@ -517,30 +518,29 @@ func (machine *Machine[S, E, C]) unreachableDiagnostics() []Diagnostic {
 		return nil
 	}
 	reachable := map[S]bool{machine.initial: true}
-	changed := true
-	for changed {
-		changed = false
+	pending := []S{machine.initial}
+	for cursor := range len(machine.states) {
+		if cursor == len(pending) {
+			break
+		}
+		source := pending[cursor]
+		state := machine.states[source]
 		for _, transition := range machine.transitions {
-			if transition.Wildcard {
-				hasReachableSource := false
-				for source := range reachable {
-					if !machine.states[source].Terminal {
-						hasReachableSource = true
-						break
-					}
-				}
-				if hasReachableSource && !reachable[transition.To] {
-					reachable[transition.To] = true
-					changed = true
-				}
+			applies := transition.Wildcard && !state.Terminal
+			if !transition.Wildcard {
+				applies = slices.Contains(transition.Sources, source)
+			}
+			if !applies {
 				continue
 			}
-			for _, source := range transition.Sources {
-				if reachable[source] && !reachable[transition.To] {
-					reachable[transition.To] = true
-					changed = true
-				}
+			if reachable[transition.To] {
+				continue
 			}
+			if _, exists := machine.states[transition.To]; !exists {
+				continue
+			}
+			reachable[transition.To] = true
+			pending = append(pending, transition.To)
 		}
 	}
 
