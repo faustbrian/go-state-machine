@@ -137,10 +137,7 @@ func boundedErrorText(cause error) string {
 		return ""
 	}
 	text := strings.ToValidUTF8(cause.Error(), "�")
-	if len(text) <= maxErrorBytes {
-		return text
-	}
-	text = text[:maxErrorBytes]
+	text = text[:min(len(text), maxErrorBytes)]
 	for !utf8.ValidString(text) {
 		text = text[:len(text)-1]
 	}
