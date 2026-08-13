@@ -1,6 +1,6 @@
 # Contributing
 
-Use Go 1.26.5 or newer. Create a conventional branch from `main`, keep commits
+Use Go 1.26.6 or newer. Create a conventional branch from `main`, keep commits
 focused, and include tests and documentation for public behavior.
 
 Run `make check` before opening a pull request. Transition changes must add
