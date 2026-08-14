@@ -5,6 +5,10 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Documentation
+
+- Link the package README to the repository-wide Golib documentation portal.
+
 ### Fixed
 
 - Bound reachability analysis by the compiled state count while continuing
