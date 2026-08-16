@@ -11,6 +11,8 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ### Fixed
 
+- Upgrade `golang.org/x/text` to v0.41.0 so the dependency graph no longer
+  contains GO-2026-5970.
 - Bound reachability analysis by the compiled state count while continuing
   past unknown destinations and reporting every disconnected state.
 - Reuse and reset an injected PostgreSQL service during repository
