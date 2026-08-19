@@ -14,7 +14,7 @@ required=(
   BenchmarkPostgresDurableWrite
 )
 for benchmark in "${required[@]}"; do
-  rg -q "^${benchmark}" benchmark.txt || {
+  grep -Eq "^${benchmark}" benchmark.txt || {
     echo "missing benchmark result: $benchmark" >&2
     exit 1
   }

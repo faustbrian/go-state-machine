@@ -11,6 +11,8 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ### Fixed
 
+- Validate benchmark output with the standard shell toolchain so clean Linux
+  CI runners do not require an undeclared ripgrep installation.
 - Upgrade `golang.org/x/text` to v0.41.0 so the dependency graph no longer
   contains GO-2026-5970.
 - Bound reachability analysis by the compiled state count while continuing
