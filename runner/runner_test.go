@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/golib/pkg/state-machine"
-	"github.com/faustbrian/golib/pkg/state-machine/runner"
-	"github.com/faustbrian/golib/pkg/state-machine/statemachinetest"
+	statemachine "github.com/faustbrian/go-state-machine"
+	"github.com/faustbrian/go-state-machine/runner"
+	"github.com/faustbrian/go-state-machine/statemachinetest"
 )
 
 type handlerFunc func(context.Context, statemachine.Effect) error

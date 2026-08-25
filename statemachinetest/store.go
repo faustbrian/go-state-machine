@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/golib/pkg/state-machine"
+	statemachine "github.com/faustbrian/go-state-machine"
 )
 
 // StoreFixture supplies typed values used by StoreContract.

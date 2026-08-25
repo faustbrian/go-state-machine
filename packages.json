@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-state-machine",
+  "packages": [
+    {
+      "module_directory": ".",
+      "directory": ".",
+      "name": "statemachine",
+      "import_path": "github.com/faustbrian/go-state-machine",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "diagram",
+      "name": "diagram",
+      "import_path": "github.com/faustbrian/go-state-machine/diagram",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "memory",
+      "name": "memory",
+      "import_path": "github.com/faustbrian/go-state-machine/memory",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "outbox",
+      "name": "outbox",
+      "import_path": "github.com/faustbrian/go-state-machine/outbox",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "postgres",
+      "name": "postgres",
+      "import_path": "github.com/faustbrian/go-state-machine/postgres",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "runner",
+      "name": "runner",
+      "import_path": "github.com/faustbrian/go-state-machine/runner",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "statemachinetest",
+      "name": "statemachinetest",
+      "import_path": "github.com/faustbrian/go-state-machine/statemachinetest",
+      "kind": "test support",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    }
+  ]
+}

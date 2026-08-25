@@ -8,7 +8,7 @@ import (
 	"testing"
 	"testing/quick"
 
-	statemachine "github.com/faustbrian/golib/pkg/state-machine"
+	statemachine "github.com/faustbrian/go-state-machine"
 )
 
 func TestPropertyTransitionIsDeterministicAndExactPrecedesWildcard(t *testing.T) {

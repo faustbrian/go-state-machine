@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/golib/pkg/state-machine"
-	"github.com/faustbrian/golib/pkg/state-machine/outbox"
+	statemachine "github.com/faustbrian/go-state-machine"
+	"github.com/faustbrian/go-state-machine/outbox"
 )
 
 type fakeStore struct {

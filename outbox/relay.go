@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	statemachine "github.com/faustbrian/golib/pkg/state-machine"
+	statemachine "github.com/faustbrian/go-state-machine"
 )
 
 // Message is one durable planned effect ready for publication.

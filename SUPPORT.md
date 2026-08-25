@@ -1,8 +1,13 @@
 # Support
 
-Use GitHub Discussions for usage questions and GitHub Issues for reproducible
-defects. Include the Go version, library version, smallest definition that
-reproduces the behavior, and the structured error or diagnostic code.
+Use GitHub issues for reproducible defects, documentation gaps, and bounded
+feature proposals. Include the module path and version, Go version, platform,
+minimal reproduction, expected behavior, actual behavior, and relevant
+non-secret logs.
 
-Use the private process in [SECURITY.md](SECURITY.md) for vulnerabilities. Do
-not post sensitive state, context, metadata, or effect payloads publicly.
+Use GitHub Discussions for adoption questions and design exploration. Use the
+private process in [`SECURITY.md`](SECURITY.md) for vulnerabilities.
+
+Support covers released module versions according to
+[`COMPATIBILITY.md`](COMPATIBILITY.md). Unreleased main-branch behavior may
+change while remediation gates are incomplete.

@@ -7,7 +7,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	statemachine "github.com/faustbrian/golib/pkg/state-machine"
+	statemachine "github.com/faustbrian/go-state-machine"
 )
 
 func TestResultCodecFailurePaths(t *testing.T) {

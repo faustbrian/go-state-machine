@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	statemachine "github.com/faustbrian/golib/pkg/state-machine"
+	statemachine "github.com/faustbrian/go-state-machine"
 )
 
 func TestValidateHistoryRejectsCorruption(t *testing.T) {

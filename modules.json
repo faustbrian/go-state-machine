@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-state-machine",
+  "go_version": "1.26.6",
+  "modules": [
+    {
+      "directory": ".",
+      "module_path": "github.com/faustbrian/go-state-machine",
+      "go_version": "1.26.6",
+      "packages": [
+        {
+          "module_directory": ".",
+          "directory": ".",
+          "name": "statemachine",
+          "import_path": "github.com/faustbrian/go-state-machine",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "diagram",
+          "name": "diagram",
+          "import_path": "github.com/faustbrian/go-state-machine/diagram",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "memory",
+          "name": "memory",
+          "import_path": "github.com/faustbrian/go-state-machine/memory",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "outbox",
+          "name": "outbox",
+          "import_path": "github.com/faustbrian/go-state-machine/outbox",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "postgres",
+          "name": "postgres",
+          "import_path": "github.com/faustbrian/go-state-machine/postgres",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "runner",
+          "name": "runner",
+          "import_path": "github.com/faustbrian/go-state-machine/runner",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "statemachinetest",
+          "name": "statemachinetest",
+          "import_path": "github.com/faustbrian/go-state-machine/statemachinetest",
+          "kind": "test support",
+          "production": false,
+          "executable": true,
+          "coverage_required": false,
+          "build_required": true,
+          "build_tags": []
+        }
+      ],
+      "purpose": "`state-machine` is a typed, deterministic state-machine library for Go. Compiled definitions select transitions and plan effects without performing I/O. Optional packages execute effects, persist state and history, publish a durable outbox, and export diagrams.",
+      "lifecycle": "stable",
+      "kind": "public library",
+      "releasable": true,
+      "family": "persistence-and-durability",
+      "family_label": "Persistence And Durability",
+      "family_description": "Durable state, delivery, coordination, recovery, and operational lifecycle.",
+      "family_order": 4,
+      "version": "v1.0.0",
+      "tag_prefix": "v",
+      "owned_dependencies": [],
+      "reverse_owned_dependencies": [],
+      "external_runtime_dependencies": [
+        "github.com/jackc/pgx/v5",
+        "github.com/testcontainers/testcontainers-go/modules/postgres"
+      ],
+      "required_services": [
+        "postgresql"
+      ],
+      "build_tags": [],
+      "test_tags": [
+        "integration"
+      ],
+      "interoperability_tools": [],
+      "specifications": [],
+      "conformance_corpora": [],
+      "provenance": [],
+      "goal_files": [
+        ".ai/GOAL.md",
+        ".ai/GOAL_HARDEN.md"
+      ],
+      "goal_status": "implementation-evidence-inventoried",
+      "goal_evidence": [
+        {
+          "file": ".ai/GOAL.md",
+          "requirements_sha256": "5dcf6c3eb53dbebbc7ba8e80b564c232afcc8873d6707809cdef7c4ae0eb2db1",
+          "implementation_evidence": [
+            "CHANGELOG.md",
+            "README.md",
+            "docs/README.md",
+            "docs/api.md",
+            "docs/architecture.md"
+          ],
+          "verification_gates": [
+            "format-check",
+            "tidy-check",
+            "safety",
+            "vet",
+            "test",
+            "race",
+            "coverage",
+            "lint",
+            "staticcheck",
+            "vulnerability",
+            "secrets",
+            "licenses",
+            "sbom",
+            "fuzz",
+            "mutation",
+            "nilaway",
+            "docs",
+            "api",
+            "conformance",
+            "interoperability",
+            "benchmark"
+          ],
+          "implementation_status": "implemented-requires-fresh-verification"
+        },
+        {
+          "file": ".ai/GOAL_HARDEN.md",
+          "requirements_sha256": "094556f6caa6bf283b0250ad8eebffc06602a98bea3148c0ba4b19bad2e38bb6",
+          "implementation_evidence": [
+            "CHANGELOG.md",
+            "README.md",
+            "docs/README.md",
+            "docs/api.md",
+            "docs/architecture.md"
+          ],
+          "verification_gates": [
+            "format-check",
+            "tidy-check",
+            "safety",
+            "vet",
+            "test",
+            "race",
+            "coverage",
+            "lint",
+            "staticcheck",
+            "vulnerability",
+            "secrets",
+            "licenses",
+            "sbom",
+            "fuzz",
+            "mutation",
+            "nilaway",
+            "docs",
+            "api",
+            "conformance",
+            "interoperability",
+            "benchmark"
+          ],
+          "implementation_status": "implemented-requires-fresh-verification"
+        }
+      ],
+      "gates": {
+        "api_compatibility": true,
+        "benchmarks": true,
+        "conformance": false,
+        "coverage": true,
+        "documentation": true,
+        "fuzz": true,
+        "lint": true,
+        "mutation": true,
+        "race": true,
+        "security": true,
+        "tests": true
+      }
+    }
+  ]
+}

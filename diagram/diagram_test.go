@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	statemachine "github.com/faustbrian/golib/pkg/state-machine"
-	"github.com/faustbrian/golib/pkg/state-machine/diagram"
+	statemachine "github.com/faustbrian/go-state-machine"
+	"github.com/faustbrian/go-state-machine/diagram"
 )
 
 func TestExportsMermaidAndGraphvizDeterministically(t *testing.T) {

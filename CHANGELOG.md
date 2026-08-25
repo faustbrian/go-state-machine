@@ -5,6 +5,12 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-25
+
+### Changed
+
+- Publish the module from its standalone `github.com/faustbrian/go-state-machine` identity while preserving its documented API and behavior.
+
 ### Documentation
 
 - Link the package README to the repository-wide Golib documentation portal.
@@ -37,3 +43,6 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 - Atomic PostgreSQL state, history, and outbox writes.
 - Leased at-least-once outbox publication and dead-letter handling.
 - Property, model, fuzz, race, integration, and benchmark evidence.
+
+[Unreleased]: https://github.com/faustbrian/go-state-machine/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/faustbrian/go-state-machine/releases/tag/v1.0.0

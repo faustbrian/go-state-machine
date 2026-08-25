@@ -1,4 +1,4 @@
-module github.com/faustbrian/golib/pkg/state-machine
+module github.com/faustbrian/go-state-machine
 
 go 1.26.6
 

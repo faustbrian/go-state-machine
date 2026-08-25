@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	statemachine "github.com/faustbrian/golib/pkg/state-machine"
+	statemachine "github.com/faustbrian/go-state-machine"
 )
 
 func TestEvolutionMigratesSnapshotAndHistoryThroughVersions(t *testing.T) {

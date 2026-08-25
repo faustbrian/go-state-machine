@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	statemachine "github.com/faustbrian/golib/pkg/state-machine"
+	statemachine "github.com/faustbrian/go-state-machine"
 )
 
 // Outcome classifies one effect attempt.

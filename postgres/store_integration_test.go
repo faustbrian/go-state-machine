@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/golib/pkg/state-machine"
-	"github.com/faustbrian/golib/pkg/state-machine/outbox"
-	storepostgres "github.com/faustbrian/golib/pkg/state-machine/postgres"
-	"github.com/faustbrian/golib/pkg/state-machine/statemachinetest"
+	statemachine "github.com/faustbrian/go-state-machine"
+	"github.com/faustbrian/go-state-machine/outbox"
+	storepostgres "github.com/faustbrian/go-state-machine/postgres"
+	"github.com/faustbrian/go-state-machine/statemachinetest"
 	"github.com/jackc/pgx/v5/pgxpool"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 )

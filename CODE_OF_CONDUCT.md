@@ -1,11 +1,9 @@
-# Code of Conduct
+# Code Of Conduct
 
-We pledge to make participation in this project a harassment-free experience
-for everyone. Be respectful, constructive, and considerate. Unacceptable
-behavior includes harassment, intimidation, discrimination, and publishing
-private information without permission.
+Participants must communicate professionally, assume good intent while
+evaluating technical claims from evidence, and avoid harassment, discrimination,
+personal attacks, threats, or disclosure of private information.
 
-Project maintainers may remove, edit, or reject contributions and may
-temporarily or permanently ban contributors whose behavior is inappropriate.
-Report conduct concerns privately through the contact method in
-[SECURITY.md](SECURITY.md). Maintainers will review reports promptly and fairly.
+Maintainers may edit, reject, or remove contributions and participation that
+violate these expectations. Report conduct concerns privately to the repository
+owner. Reports will be reviewed confidentially and addressed proportionally.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	statemachine "github.com/faustbrian/golib/pkg/state-machine"
-	"github.com/faustbrian/golib/pkg/state-machine/memory"
+	statemachine "github.com/faustbrian/go-state-machine"
+	"github.com/faustbrian/go-state-machine/memory"
 )
 
 func Example() {
