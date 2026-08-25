@@ -5,6 +5,8 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-25
+
 ### Changed
 
 - Upgrade `moby/go-archive` and `golang.org/x/crypto` to their current
@@ -25,8 +27,6 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 - Harden standalone documentation validation with deterministic spelling and
   link checks, package-specific documentation gates, and repository-local
   contributor guidance.
-
-## [1.0.0] - 2026-08-25
 
 ### Changed
 
