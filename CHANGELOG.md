@@ -7,8 +7,8 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ### Changed
 
-- Adopt the released shared Go library verification tooling while retaining
-  repository-owned policy, evidence, fixtures, and API baselines.
+- Adopt `go-library-tools` v1.0.6 while retaining repository-owned policy,
+  evidence, fixtures, and API baselines.
 
 ## [1.0.0] - 2026-08-25
 
