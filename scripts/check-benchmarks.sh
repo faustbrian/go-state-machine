@@ -2,19 +2,21 @@
 set -euo pipefail
 
 duration="${1:-100ms}"
+output="${BENCHMARK_OUTPUT:-.artifacts/benchmark.txt}"
+mkdir -p "$(dirname "$output")"
 go test ./... -run '^$' -bench . -benchmem -benchtime="$duration" \
-  | tee benchmark.txt
+  | tee "$output"
 STATE_MACHINE_POSTGRES_VERSION="${STATE_MACHINE_POSTGRES_VERSION:-18}" \
   go test -tags=integration ./postgres -run '^$' \
   -bench '^BenchmarkPostgresDurableWrite$' -benchmem -benchtime="$duration" \
-  | tee -a benchmark.txt
+  | tee -a "$output"
 required=(
   BenchmarkCompilation BenchmarkHotTransition BenchmarkGuardSets
   BenchmarkReplay BenchmarkHistoryGrowth BenchmarkContendedPersistence
   BenchmarkPostgresDurableWrite
 )
 for benchmark in "${required[@]}"; do
-  grep -Eq "^${benchmark}" benchmark.txt || {
+  grep -Eq "^${benchmark}" "$output" || {
     echo "missing benchmark result: $benchmark" >&2
     exit 1
   }
@@ -24,7 +26,7 @@ assert_budget() {
   local benchmark="$1"
   local maximum="$2"
   local value
-  value="$(awk -v prefix="$benchmark" '$1 ~ ("^" prefix "(-|/)") { print $3; exit }' benchmark.txt)"
+  value="$(awk -v prefix="$benchmark" '$1 ~ ("^" prefix "(-|/)") { print $3; exit }' "$output")"
   [[ -n "$value" ]] || {
     echo "missing benchmark value: $benchmark" >&2
     exit 1

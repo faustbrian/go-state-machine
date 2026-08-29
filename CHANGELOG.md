@@ -5,6 +5,11 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- Adopt `go-library-tools` v1.0.6 while retaining repository-owned policy,
+  evidence, fixtures, and API baselines.
+
 ## [1.0.0] - 2026-08-25
 
 ### Changed
@@ -34,7 +39,7 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ### Documentation
 
-- Link the package README to the repository-wide Golib documentation portal.
+- Link the package README to the repository documentation index.
 
 ### Fixed
 

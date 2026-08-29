@@ -1,11 +1,16 @@
-SHELL := /usr/bin/env bash
+GOLIB ?= golib
 
-.PHONY: check ci inventory repository-check
+.PHONY: check ci inventory repository-check workflows
 
 check:
-	./.golib/scripts/with-disposable-go-cache.sh ./.golib/scripts/run-modules.sh check --all
+	$(GOLIB) check --all
 
-ci: repository-check check
+ci:
+	$(GOLIB) repository check
+	$(GOLIB) check --all
 
 inventory repository-check:
-	./.golib/scripts/repository-check.sh
+	$(GOLIB) repository check
+
+workflows:
+	$(GOLIB) workflows check
