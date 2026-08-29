@@ -18,10 +18,6 @@ permissions:
   contents: read
   security-events: write
 
-concurrency:
-  group: go-state-machine-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   ci:
     uses: faustbrian/go-library-tools/.github/workflows/library-ci.yml@ba022fc6c64c5661bcb07f0ab7e2e4e79f4b000d # v1.0.6
