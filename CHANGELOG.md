@@ -7,6 +7,10 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ### Changed
 
+- Adopt the checksum-verified `go-library-tools` v1.4.0 CLI and immutable W14
+  reusable workflow, including strict online specification validation, without
+  changing the state-machine API or runtime behavior.
+
 - Adopt the checksum-verified `go-library-tools` v1.3.0 CLI, schema-v2
   cohesion metadata, a local cohesion gate, and immutable shared CI cohesion
   enforcement without changing the state-machine API or runtime behavior.
@@ -15,6 +19,9 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
   evidence, fixtures, and API baselines.
 
 ### Documentation
+
+- Link ecosystem and Domain utilities family guidance to the immutable v1.4.0
+  documentation release.
 
 - Link package discovery to the immutable v1.3.0 Golib ecosystem index and
   Domain utilities family guidance.
