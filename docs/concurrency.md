@@ -22,6 +22,39 @@ may claim concurrently because PostgreSQL uses row locks and `SKIP LOCKED`.
 Lease expiry permits recovery after cancellation or process failure and can
 cause duplicate delivery.
 
+## Retained collaborators
+
+Constructed values borrow function and interface collaborators for their
+complete lifetime. Callers own those collaborators and must keep them valid
+until the constructed value is no longer used. The library does not clone or
+dynamically replace them. Callers must not replace or mutate their behavior
+while an operation is using the constructed value, and must synchronize any
+collaborator state shared across concurrent operations.
+
+- A compiled `Machine` retains every `Guard`, `CheckedGuard`, and
+  `Definition.CloneContext` function. `Compile` copies definition slices and
+  effect payloads, but callers remain responsible for the concurrency safety
+  and lifetime of those functions and anything they capture.
+- A compiled `Evolution` retains each `Migration.State` and `Migration.Event`
+  function. Callers must keep their captured state valid and concurrency safe
+  for every concurrent `Migrate` call.
+- A `diagram.Renderer` retains its state and event label functions. Callers
+  must keep their captured state valid and safe for every concurrent render.
+- A `runner.Runner` retains the `Handler`, `Options.Recorder`, `Options.Clock`,
+  and `Options.Classify` collaborators. They remain caller-owned and must be
+  valid and concurrency safe for every `Execute` call.
+- An `outbox.Relay` retains `RelayOptions.Store`, `Publisher`, `Clock`,
+  `Classify`, and `RetryDelay`. They remain caller-owned and must be valid for
+  every `RunOnce` call; concurrent calls require all five collaborators to
+  support that concurrency.
+- A `postgres.Store` retains `Options.Pool`, both codec functions,
+  `Options.NewID`, and `Options.Clock`. They remain caller-owned and must be
+  valid and concurrency safe for every store operation. The store never closes
+  `Options.Pool`; the caller must close it only after all store and relay
+  operations that use it have stopped.
+
+`memory.Store` retains no external collaborator or resource.
+
 Cancellation is checked before transition selection, before guards, before
 effect handling, before relay publication, and by store calls. Cancellation
 does not roll back work that an external handler or publisher completed before

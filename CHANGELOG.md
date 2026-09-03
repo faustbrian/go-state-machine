@@ -7,8 +7,21 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ### Changed
 
+- Adopt the checksum-verified `go-library-tools` v1.3.0 CLI, schema-v2
+  cohesion metadata, a local cohesion gate, and immutable shared CI cohesion
+  enforcement without changing the state-machine API or runtime behavior.
+
 - Adopt `go-library-tools` v1.0.6 while retaining repository-owned policy,
   evidence, fixtures, and API baselines.
+
+### Documentation
+
+- Link package discovery to the immutable v1.3.0 Golib ecosystem index and
+  Domain utilities family guidance.
+
+- Define caller ownership, validity, concurrency, replacement, and shutdown
+  responsibilities for every collaborator retained by compiled machines and
+  optional runtime packages.
 
 ## [1.0.0] - 2026-08-25
 

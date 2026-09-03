@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "repository": "github.com/faustbrian/go-state-machine",
   "go_version": "1.26.6",
   "modules": [
@@ -97,10 +97,10 @@
       "lifecycle": "stable",
       "kind": "public library",
       "releasable": true,
-      "family": "persistence-and-durability",
-      "family_label": "Persistence And Durability",
-      "family_description": "Durable state, delivery, coordination, recovery, and operational lifecycle.",
-      "family_order": 4,
+      "family": "domain-utilities",
+      "family_label": "Domain Utilities",
+      "family_description": "Domain-specific immutable values, algorithms, parsers, proofs, and calculations.",
+      "family_order": 8,
       "version": "1.0.0",
       "tag_prefix": "v",
       "owned_dependencies": [],
@@ -197,6 +197,102 @@
           "implementation_status": "implemented-requires-fresh-verification"
         }
       ],
+      "cohesion": {
+        "family": "domain-utilities",
+        "secondary_capabilities": [
+          "data-encoding",
+          "database-and-storage",
+          "eventing-and-messaging",
+          "testing-and-conformance"
+        ],
+        "responsibility": "Provide deterministic typed state-machine compilation, transition selection, inert effect planning, replay and evolution, with optional explicit execution, persistence, outbox delivery, and diagram rendering.",
+        "non_goals": [
+          "Own durable workflow scheduling, timers, activities, retries, distributed compensation, or recovery orchestration.",
+          "Execute effects, perform persistence, or acquire application resources implicitly from the core package.",
+          "Provide a rule engine, queue, saga framework, or dependency-injection container."
+        ],
+        "public_package_identifier": "statemachine",
+        "primary_entry_packages": [
+          "github.com/faustbrian/go-state-machine"
+        ],
+        "package_selection": {
+          "github.com/faustbrian/go-state-machine": "Use to compile typed finite-state definitions into immutable machines, select transitions, plan inert effects, replay inputs, and validate or evolve history.",
+          "github.com/faustbrian/go-state-machine/diagram": "Use to render a compiled machine graph as bounded Mermaid or Graphviz output.",
+          "github.com/faustbrian/go-state-machine/memory": "Use for concurrency-safe ephemeral state-machine persistence in tests, development, or non-durable processes.",
+          "github.com/faustbrian/go-state-machine/outbox": "Use to relay persisted state-machine effects with explicit leases, failure classification, and at-least-once delivery.",
+          "github.com/faustbrian/go-state-machine/postgres": "Use for durable PostgreSQL state, history, snapshots, optimistic transitions, and atomic outbox insertion.",
+          "github.com/faustbrian/go-state-machine/runner": "Use to execute an inert effect plan explicitly with ordered handling, cancellation, panic containment, and outcome recording.",
+          "github.com/faustbrian/go-state-machine/statemachinetest": "Use to verify custom Store and effect-runner implementations against reusable conformance contracts."
+        },
+        "lifecycle_status": "active",
+        "maturity": "stable",
+        "construction_styles": [
+          "builder-compile",
+          "new-options",
+          "plain-function"
+        ],
+        "lifecycle_styles": [
+          "stateless"
+        ],
+        "ownership": {
+          "configuration": "caller",
+          "mutable_inputs": [
+            "borrow",
+            "copy"
+          ],
+          "runtime_resources": "caller",
+          "background_work": "none"
+        },
+        "optional_owned_dependencies": [],
+        "adapters": [
+          "github.com/faustbrian/go-state-machine/diagram",
+          "github.com/faustbrian/go-state-machine/memory",
+          "github.com/faustbrian/go-state-machine/outbox",
+          "github.com/faustbrian/go-state-machine/postgres",
+          "github.com/faustbrian/go-state-machine/runner"
+        ],
+        "companions": [
+          "github.com/faustbrian/go-temporal",
+          "github.com/faustbrian/go-workflow"
+        ],
+        "supported_go": {
+          "minimum": "1.26.6",
+          "tested": [
+            "1.26.6"
+          ]
+        },
+        "supported_platforms": [
+          "portable-go"
+        ],
+        "supported_backends": [
+          "memory",
+          "postgresql"
+        ],
+        "supported_protocols": [
+          "graphviz-dot",
+          "mermaid",
+          "postgresql"
+        ],
+        "documentation": {
+          "readme": "README.md",
+          "api": "docs/api.md",
+          "adoption": "docs/adoption.md",
+          "security": "SECURITY.md",
+          "compatibility": "COMPATIBILITY.md",
+          "performance": "benchmark_test.go",
+          "examples": "examples_test.go",
+          "faq": "docs/faq.md",
+          "changelog": "CHANGELOG.md",
+          "pkg_go_dev": "https://pkg.go.dev/github.com/faustbrian/go-state-machine",
+          "ecosystem_index": "https://github.com/faustbrian/go-library-tools/blob/v1.3.0/docs/ecosystem/README.md"
+        },
+        "known_good_compatibility_sets": [],
+        "delivery": {
+          "implementation": "not-started",
+          "hardening": "not-started",
+          "release": "not-started"
+        }
+      },
       "gates": {
         "api_compatibility": true,
         "benchmarks": true,
