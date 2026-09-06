@@ -18,6 +18,23 @@ durable outbox, and export diagrams.
 It is intentionally not a workflow engine, scheduler, rule engine, queue, saga
 framework, or dependency-injection container.
 
+This is a stable v1 public library and requires Go 1.26.6 or newer.
+
+## Install
+
+```sh
+go get github.com/faustbrian/go-state-machine@v1
+```
+
+## Choose the right package
+
+- Use `go-state-machine` for finite-state transition selection and inert effect
+  plans.
+- Use [`go-workflow`](https://github.com/faustbrian/go-workflow) for durable,
+  multi-step workflows and sagas with timers, signals, and recovery.
+- Use [`go-temporal`](https://github.com/faustbrian/go-temporal) for period,
+  interval, sequence, and time-of-day value algebra.
+
 ## Quick start
 
 ```go

@@ -20,6 +20,9 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ### Documentation
 
+- Add the canonical v1 install command, supported Go version, stable maturity,
+  and package-selection guidance for State Machine, Workflow, and Temporal.
+
 - Link ecosystem and Domain utilities family guidance to the immutable v1.4.0
   documentation release.
 
