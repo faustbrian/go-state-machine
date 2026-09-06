@@ -20,6 +20,11 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ### Documentation
 
+- Add package-specific performance, operations, and troubleshooting guides;
+  complete support, security, examples, compatibility, and license navigation;
+  and move delivery metadata beyond `not-started` while fresh verification and
+  the next patch release remain pending.
+
 - Add the canonical v1 install command, supported Go version, stable maturity,
   and package-selection guidance for State Machine, Workflow, and Temporal.
 
@@ -33,7 +38,7 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
   responsibilities for every collaborator retained by compiled machines and
   optional runtime packages.
 
-## [1.0.0] - 2026-08-25
+## [1.0.0] - 2026-08-26
 
 ### Changed
 

@@ -2,11 +2,13 @@
 set -euo pipefail
 
 required=(
-  README.md CHANGELOG.md LICENSE SECURITY.md SUPPORT.md CONTRIBUTING.md
-  CODE_OF_CONDUCT.md docs/README.md docs/quickstart.md docs/api.md
+  README.md CHANGELOG.md COMPATIBILITY.md LICENSE SECURITY.md SUPPORT.md
+  CONTRIBUTING.md CODE_OF_CONDUCT.md examples_test.go docs/README.md
+  docs/quickstart.md docs/api.md
   docs/architecture.md docs/guards-effects.md docs/persistence.md
   docs/evolution.md docs/outbox.md docs/replay-debugging.md
-  docs/concurrency.md docs/adoption.md docs/boundaries.md docs/faq.md
+  docs/concurrency.md docs/performance.md docs/operations.md
+  docs/troubleshooting.md docs/adoption.md docs/boundaries.md docs/faq.md
 )
 for path in "${required[@]}"; do
   test -s "$path"

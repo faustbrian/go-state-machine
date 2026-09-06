@@ -122,9 +122,12 @@ the PostgreSQL store and publish them with `outbox`.
 
 ## Documentation
 
-Start with the [documentation index](docs/README.md). It links the API
-reference, architecture, persistence, migration, replay, concurrency, adoption,
-FAQ, and integration guides.
+Start with the [documentation index](docs/README.md). It links the
+[compiler-checked examples](examples_test.go), API and adoption guides,
+[performance model](docs/performance.md), [operations guide](docs/operations.md),
+and [troubleshooting](docs/troubleshooting.md). Use [SUPPORT.md](SUPPORT.md) for
+questions and defects, [SECURITY.md](SECURITY.md) for private vulnerability
+reports, and the [changelog](CHANGELOG.md) for user-visible changes.
 
 For ecosystem-wide selection and ownership guidance, see the versioned
 [Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
