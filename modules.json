@@ -279,7 +279,7 @@
           "adoption": "docs/adoption.md",
           "security": "SECURITY.md",
           "compatibility": "COMPATIBILITY.md",
-          "performance": "benchmark_test.go",
+          "performance": "docs/performance.md",
           "examples": "examples_test.go",
           "faq": "docs/faq.md",
           "changelog": "CHANGELOG.md",
@@ -288,9 +288,9 @@
         },
         "known_good_compatibility_sets": [],
         "delivery": {
-          "implementation": "not-started",
-          "hardening": "not-started",
-          "release": "not-started"
+          "implementation": "in-progress",
+          "hardening": "in-progress",
+          "release": "in-progress"
         }
       },
       "gates": {
