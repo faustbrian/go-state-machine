@@ -7,7 +7,7 @@
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-state-machine.svg)](https://pkg.go.dev/github.com/faustbrian/go-state-machine)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-state-machine?sort=semver)](https://github.com/faustbrian/go-state-machine/releases)
-[![Go](https://img.shields.io/badge/go-1.26.6-00ADD8?logo=go)](https://go.dev/)
+[![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 `state-machine` is a typed, deterministic state-machine library for Go.
@@ -18,7 +18,7 @@ durable outbox, and export diagrams.
 It is intentionally not a workflow engine, scheduler, rule engine, queue, saga
 framework, or dependency-injection container.
 
-This is a stable v1 public library and requires Go 1.26.6 or newer.
+This is a stable v1 public library and requires Go 1.27.0 or newer.
 
 ## Install
 
