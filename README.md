@@ -18,7 +18,7 @@ durable outbox, and export diagrams.
 It is intentionally not a workflow engine, scheduler, rule engine, queue, saga
 framework, or dependency-injection container.
 
-This is a stable v1 public library and requires Go 1.26.6 or newer.
+This is a stable v1 public library and requires Go 1.27.0 or newer.
 
 ## Install
 
