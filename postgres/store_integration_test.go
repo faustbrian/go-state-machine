@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
-	"github.com/faustbrian/go-state-machine/outbox"
-	storepostgres "github.com/faustbrian/go-state-machine/postgres"
-	"github.com/faustbrian/go-state-machine/statemachinetest"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
+	"github.com/faustbrian/go-state-machine/v2/outbox"
+	storepostgres "github.com/faustbrian/go-state-machine/v2/postgres"
+	"github.com/faustbrian/go-state-machine/v2/statemachinetest"
 	"github.com/jackc/pgx/v5/pgxpool"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 )
@@ -238,9 +238,9 @@ func TestPostgresStoreContractAndAtomicOutbox(t *testing.T) {
 	if err := store.Retry(ctx, reclaimedRef, time.Now().Add(-time.Second), errors.New(strings.Repeat("x", 5_000))); err != nil {
 		t.Fatalf("long retry error: %v", err)
 	}
-	var errorLength int
-	if err := pool.QueryRow(ctx, `SELECT length(last_error) FROM state_machine.state_machine_outbox WHERE id = $1`, reclaimedRef.ID).Scan(&errorLength); err != nil || errorLength != 4_096 {
-		t.Fatalf("last error length = %d, %v", errorLength, err)
+	var persistedError string
+	if err := pool.QueryRow(ctx, `SELECT last_error FROM state_machine.state_machine_outbox WHERE id = $1`, reclaimedRef.ID).Scan(&persistedError); err != nil || persistedError != "redacted" {
+		t.Fatalf("last error = %q, %v", persistedError, err)
 	}
 	reclaimed, err = store.Claim(ctx, outbox.ClaimRequest{Owner: "relay-3", Limit: 1, LeaseDuration: time.Minute})
 	if err != nil || len(reclaimed) != 1 {

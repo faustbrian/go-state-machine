@@ -36,7 +36,7 @@ type MigrationError struct {
 }
 
 func (err *MigrationError) Error() string {
-	return fmt.Sprintf("statemachine: migrate %s from %s to %s: %v", err.Field, err.From, err.To, err.Cause)
+	return "statemachine: migration failed"
 }
 
 func (err *MigrationError) Unwrap() error {
@@ -52,7 +52,7 @@ func CompileEvolution[S State, E Event](migrations []Migration[S, E]) (*Evolutio
 			return nil, ErrInvalidEvolution
 		}
 		if _, exists := evolution.steps[migration.From]; exists {
-			return nil, fmt.Errorf("%w: version %s has multiple successors", ErrInvalidEvolution, migration.From)
+			return nil, ErrInvalidEvolution
 		}
 		evolution.steps[migration.From] = migration
 	}
@@ -60,7 +60,7 @@ func CompileEvolution[S State, E Event](migrations []Migration[S, E]) (*Evolutio
 		seen := make(map[Version]bool)
 		for version := start; evolution.steps[version].To != ""; version = evolution.steps[version].To {
 			if seen[version] {
-				return nil, fmt.Errorf("%w: migration cycle at version %s", ErrInvalidEvolution, version)
+				return nil, ErrInvalidEvolution
 			}
 			seen[version] = true
 		}
@@ -101,7 +101,7 @@ func (evolution *Evolution[S, E]) migrateState(ctx context.Context, state S, fro
 		}
 		migration, exists := evolution.steps[from]
 		if !exists {
-			return state, fmt.Errorf("%w: from %s to %s", ErrMissingMigration, from, target)
+			return state, ErrMissingMigration
 		}
 		if migration.State != nil {
 			migrated, err := migration.State(state)
@@ -122,7 +122,7 @@ func (evolution *Evolution[S, E]) migrateResult(ctx context.Context, result Resu
 		}
 		migration, exists := evolution.steps[result.DefinitionVersion]
 		if !exists {
-			return Result[S, E]{}, fmt.Errorf("%w: from %s to %s", ErrMissingMigration, result.DefinitionVersion, target)
+			return Result[S, E]{}, ErrMissingMigration
 		}
 		if migration.State != nil {
 			previous, err := migration.State(result.Previous)

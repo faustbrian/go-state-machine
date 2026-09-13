@@ -3,17 +3,14 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
-	"unicode/utf8"
 
-	statemachine "github.com/faustbrian/go-state-machine"
-	"github.com/faustbrian/go-state-machine/outbox"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
+	"github.com/faustbrian/go-state-machine/v2/outbox"
 )
 
 const (
 	maxClaimBatch = 1_000
-	maxErrorBytes = 4_096
 )
 
 // Claim leases a bounded ordered batch using FOR UPDATE SKIP LOCKED.
@@ -21,13 +18,17 @@ func (store *Store[S, E]) Claim(ctx context.Context, request outbox.ClaimRequest
 	if request.Owner == "" || request.Limit <= 0 || request.Limit > maxClaimBatch || request.LeaseDuration <= 0 {
 		return nil, outbox.ErrInvalidClaim
 	}
+	limits := store.persistenceLimits()
+	if len(request.Owner) > limits.MaxIdentifierBytes {
+		return nil, fmt.Errorf("%w: outbox owner", statemachine.ErrLimitExceeded)
+	}
 	now := store.clock()
 	leasedUntil := now.Add(request.LeaseDuration)
 	tx, err := store.pool.Begin(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("postgres: begin outbox claim: %w", err)
+		return nil, wrapError("begin outbox claim", err)
 	}
-	defer func() { _ = tx.Rollback(context.Background()) }()
+	defer rollback(tx)
 	rows, err := tx.Query(ctx, fmt.Sprintf(`
 SELECT id, instance_id, sequence, effect_index, kind, payload, occurred_at,
        attempts
@@ -40,7 +41,7 @@ ORDER BY available_at, occurred_at, id
 FOR UPDATE SKIP LOCKED
 LIMIT $2`, store.schema), now, request.Limit)
 	if err != nil {
-		return nil, fmt.Errorf("postgres: select outbox claims: %w", err)
+		return nil, wrapError("select outbox claims", err)
 	}
 	type candidate struct {
 		id         string
@@ -53,17 +54,34 @@ LIMIT $2`, store.schema), now, request.Limit)
 		attempts   int
 	}
 	candidates := make([]candidate, 0, request.Limit)
+	remainingBytes := limits.MaxClaimBytes
 	for rows.Next() {
 		var item candidate
 		if err := rows.Scan(&item.id, &item.instanceID, &item.sequence, &item.index, &item.kind, &item.payload, &item.occurredAt, &item.attempts); err != nil {
 			rows.Close()
-			return nil, fmt.Errorf("postgres: scan outbox claim: %w", err)
+			return nil, wrapError("scan outbox claim", err)
+		}
+		if item.id == "" || item.instanceID == "" || item.sequence <= 0 || item.index < 0 || item.kind == "" || item.attempts < 0 {
+			rows.Close()
+			return nil, statemachine.ErrInvalidStoreInput
+		}
+		if len(item.id) > limits.MaxIdentifierBytes || len(item.instanceID) > limits.MaxInstanceIDBytes ||
+			len(item.kind) > limits.MaxIdentifierBytes || len(item.payload) > limits.Machine.MaxEffectPayloadBytes {
+			rows.Close()
+			return nil, fmt.Errorf("%w: outbox message", statemachine.ErrLimitExceeded)
+		}
+		if !consumeSize(&remainingBytes, len(item.id), 1) ||
+			!consumeSize(&remainingBytes, len(item.instanceID), 1) ||
+			!consumeSize(&remainingBytes, len(item.kind), 1) ||
+			!consumeSize(&remainingBytes, len(item.payload), 1) {
+			rows.Close()
+			return nil, fmt.Errorf("%w: outbox claim bytes", statemachine.ErrLimitExceeded)
 		}
 		candidates = append(candidates, item)
 	}
 	if err := rows.Err(); err != nil {
 		rows.Close()
-		return nil, fmt.Errorf("postgres: iterate outbox claims: %w", err)
+		return nil, wrapError("iterate outbox claims", err)
 	}
 	rows.Close()
 
@@ -73,13 +91,16 @@ LIMIT $2`, store.schema), now, request.Limit)
 		if token == "" {
 			return nil, fmt.Errorf("%w: empty lease token", outbox.ErrInvalidClaim)
 		}
+		if len(token) > limits.MaxIdentifierBytes {
+			return nil, fmt.Errorf("%w: outbox lease token", statemachine.ErrLimitExceeded)
+		}
 		_, err := tx.Exec(ctx, fmt.Sprintf(`
 UPDATE %s.state_machine_outbox
 SET lease_owner = $1, lease_token = $2, leased_until = $3,
     attempts = attempts + 1
 WHERE id = $4`, store.schema), request.Owner, token, leasedUntil, item.id)
 		if err != nil {
-			return nil, fmt.Errorf("postgres: lease outbox message: %w", err)
+			return nil, wrapError("lease outbox message", err)
 		}
 		claims = append(claims, outbox.Claim{
 			Message: outbox.Message{
@@ -92,7 +113,7 @@ WHERE id = $4`, store.schema), request.Owner, token, leasedUntil, item.id)
 		})
 	}
 	if err := tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("postgres: commit outbox claim: %w", err)
+		return nil, wrapError("commit outbox claim", err)
 	}
 	return claims, nil
 }
@@ -116,6 +137,9 @@ func (store *Store[S, E]) finishLease(ctx context.Context, ref outbox.LeaseRef, 
 	if ref.ID == "" || ref.Token == "" {
 		return outbox.ErrInvalidClaim
 	}
+	if len(ref.ID) > store.persistenceLimits().MaxIdentifierBytes || len(ref.Token) > store.persistenceLimits().MaxIdentifierBytes {
+		return fmt.Errorf("%w: outbox lease reference", statemachine.ErrLimitExceeded)
+	}
 	errorText := boundedErrorText(cause)
 	tag, err := store.pool.Exec(ctx, fmt.Sprintf(`
 UPDATE %s.state_machine_outbox
@@ -124,7 +148,7 @@ SET %s, last_error = NULLIF($4, ''), lease_owner = NULL,
 WHERE id = $1 AND lease_token = $2 AND published_at IS NULL
   AND dead_lettered_at IS NULL`, store.schema, assignment), ref.ID, ref.Token, value, errorText)
 	if err != nil {
-		return fmt.Errorf("postgres: finish outbox lease: %w", err)
+		return wrapError("finish outbox lease", err)
 	}
 	if tag.RowsAffected() == 0 {
 		return outbox.ErrLeaseLost
@@ -136,12 +160,7 @@ func boundedErrorText(cause error) string {
 	if cause == nil {
 		return ""
 	}
-	text := strings.ToValidUTF8(cause.Error(), "�")
-	text = text[:min(len(text), maxErrorBytes)]
-	for !utf8.ValidString(text) {
-		text = text[:len(text)-1]
-	}
-	return text
+	return "redacted"
 }
 
 // These small adapters keep the public outbox package independent of the

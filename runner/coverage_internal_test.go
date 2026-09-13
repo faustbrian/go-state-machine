@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
 type internalHandler func(context.Context, statemachine.Effect) error
@@ -38,7 +38,7 @@ func TestRunnerRemainingConstructionAndFailurePaths(t *testing.T) {
 	records, err := executor.Execute(context.Background(), []statemachine.Effect{{Kind: "bad"}})
 	var effectErr *EffectError
 	if !errors.As(err, &effectErr) || !errors.Is(err, wantErr) || effectErr.Outcome != OutcomePermanent ||
-		!strings.Contains(effectErr.Error(), "bad") || len(records) != 1 {
+		effectErr.Kind != "bad" || len(records) != 1 {
 		t.Fatalf("records = %#v, error = %v", records, err)
 	}
 

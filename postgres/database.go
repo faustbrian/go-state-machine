@@ -2,10 +2,37 @@ package postgres
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+const cleanupTimeout = 5 * time.Second
+
+type operationError struct {
+	operation string
+	cause     error
+}
+
+func (err *operationError) Error() string {
+	return fmt.Sprintf("postgres: %s failed", err.operation)
+}
+
+func (err *operationError) Unwrap() error {
+	return err.cause
+}
+
+func wrapError(operation string, cause error) error {
+	return &operationError{operation: operation, cause: cause}
+}
+
+func rollback(tx transaction) {
+	ctx, cancel := context.WithTimeout(context.Background(), cleanupTimeout)
+	defer cancel()
+	_ = tx.Rollback(ctx)
+}
 
 type commandResult interface {
 	RowsAffected() int64

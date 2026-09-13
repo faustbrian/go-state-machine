@@ -18,7 +18,12 @@ durable outbox, and export diagrams.
 It is intentionally not a workflow engine, scheduler, rule engine, queue, saga
 framework, or dependency-injection container.
 
-This is a stable v1 public library and requires Go 1.27.0 or newer.
+The latest published line is stable v1 and requires Go 1.27.0 or newer.
+This checkout contains the planned, unpublished
+`github.com/faustbrian/go-state-machine/v2` source. V2 is preview-only and
+non-releasable until its release and owned-consumer migration gates pass.
+Existing consumers must remain on released v1 and must not use a local
+`replace` directive to consume this checkout as v1.
 
 ## Install
 

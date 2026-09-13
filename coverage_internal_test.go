@@ -129,7 +129,7 @@ func TestTypedErrorsFormatAndUnwrap(t *testing.T) {
 	t.Parallel()
 
 	rejected := &GuardRejectedError{TransitionID: "go", Rejection: Rejection{Code: "no", Message: "declined"}}
-	if !errors.Is(rejected, ErrGuardRejected) || !strings.Contains(rejected.Error(), "declined") {
+	if !errors.Is(rejected, ErrGuardRejected) || rejected.Error() != ErrGuardRejected.Error() {
 		t.Fatalf("rejected error = %v", rejected)
 	}
 	panicked := &GuardPanicError{TransitionID: "go"}
@@ -141,7 +141,7 @@ func TestTypedErrorsFormatAndUnwrap(t *testing.T) {
 		t.Fatalf("replay error = %v", replay)
 	}
 	history := &HistoryError{Index: 3, Failure: HistoryStateMismatch}
-	if !strings.Contains(history.Error(), "state_mismatch") {
+	if !strings.Contains(history.Error(), "3") {
 		t.Fatalf("history error = %v", history)
 	}
 }

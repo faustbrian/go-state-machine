@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
 // Outcome classifies one effect attempt.
@@ -80,7 +80,7 @@ type EffectError struct {
 }
 
 func (err *EffectError) Error() string {
-	return fmt.Sprintf("runner: effect %d (%s) ended %s: %v", err.Index, err.Kind, err.Outcome, err.Cause)
+	return fmt.Sprintf("runner: effect %d failed", err.Index)
 }
 
 // Unwrap exposes the handler failure.
@@ -95,7 +95,7 @@ type RecorderError struct {
 }
 
 func (err *RecorderError) Error() string {
-	return fmt.Sprintf("runner: record effect %d: %v", err.Index, err.Cause)
+	return fmt.Sprintf("runner: record effect %d failed", err.Index)
 }
 
 func (err *RecorderError) Unwrap() error {

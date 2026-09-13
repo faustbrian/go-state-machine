@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
-	"github.com/faustbrian/go-state-machine/runner"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
+	"github.com/faustbrian/go-state-machine/v2/runner"
 )
 
 // EffectExecutor is the portable execution surface verified by RunnerContract.

@@ -3,7 +3,20 @@
 All notable changes to this project are documented in this file. The format is
 based on Keep a Changelog, and the project follows Semantic Versioning.
 
-## [Unreleased]
+## [Unreleased] (v2.0.0)
+
+The root source tree now uses the planned `/v2` module path. Version 2 remains
+unpublished and non-releasable until its release gates and owned-consumer
+migrations pass. Existing consumers must remain on released v1 without local
+`replace` directives.
+
+### Security
+
+- Enforce machine and encoded-size limits on PostgreSQL state, history, and
+  outbox boundaries before database work, redact persisted callback failures,
+  and make default public error strings safe to log without exposing payloads
+  or wrapped causes. Applications using custom machine limits should construct
+  the PostgreSQL store with `postgres.NewWithLimits`.
 
 ### Changed
 

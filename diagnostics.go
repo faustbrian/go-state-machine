@@ -1,10 +1,5 @@
 package statemachine
 
-import (
-	"fmt"
-	"strings"
-)
-
 // DiagnosticCode identifies a definition defect without requiring callers to
 // parse error text.
 type DiagnosticCode string
@@ -39,11 +34,7 @@ type DiagnosticsError struct {
 }
 
 func (err *DiagnosticsError) Error() string {
-	messages := make([]string, len(err.Diagnostics))
-	for index, diagnostic := range err.Diagnostics {
-		messages[index] = fmt.Sprintf("%s: %s", diagnostic.Code, diagnostic.Message)
-	}
-	return "statemachine: invalid definition: " + strings.Join(messages, "; ")
+	return "statemachine: invalid definition"
 }
 
 // Has reports whether the collection includes code.

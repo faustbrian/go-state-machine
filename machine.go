@@ -141,7 +141,7 @@ type GuardRejectedError struct {
 }
 
 func (err *GuardRejectedError) Error() string {
-	return fmt.Sprintf("%s: %s: %s", ErrGuardRejected, err.Rejection.Code, err.Rejection.Message)
+	return ErrGuardRejected.Error()
 }
 
 // Unwrap supports errors.Is(err, ErrGuardRejected).
@@ -155,7 +155,7 @@ type GuardPanicError struct {
 }
 
 func (err *GuardPanicError) Error() string {
-	return fmt.Sprintf("statemachine: guard panicked in transition %s", err.TransitionID)
+	return ErrGuardPanic.Error()
 }
 
 // Unwrap supports errors.Is(err, ErrGuardPanic).
@@ -171,7 +171,7 @@ type GuardFailedError struct {
 }
 
 func (err *GuardFailedError) Error() string {
-	return fmt.Sprintf("statemachine: guard failed in transition %s", err.TransitionID)
+	return ErrGuardFailed.Error()
 }
 
 func (err *GuardFailedError) Unwrap() []error {

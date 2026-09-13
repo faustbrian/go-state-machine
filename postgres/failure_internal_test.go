@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
-	"github.com/faustbrian/go-state-machine/outbox"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
+	"github.com/faustbrian/go-state-machine/v2/outbox"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -588,12 +588,8 @@ func TestOutboxInclusiveBoundariesAndLeaseOutcomes(t *testing.T) {
 		}
 	}
 
-	exact := strings.Repeat("x", maxErrorBytes)
-	if got := boundedErrorText(errors.New(exact)); got != exact {
-		t.Fatalf("boundedErrorText() changed exact maximum length: %d", len(got))
-	}
-	if got := boundedErrorText(errors.New(exact + "x")); got != exact {
-		t.Fatalf("boundedErrorText() over maximum = %d bytes", len(got))
+	if got := boundedErrorText(errors.New(strings.Repeat("x", 8_192))); got != "redacted" {
+		t.Fatalf("boundedErrorText() = %q", got)
 	}
 }
 

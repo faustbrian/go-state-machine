@@ -49,7 +49,7 @@ func (machine *Machine[S, E, C]) ValidateHistory(snapshot Snapshot[S], entries [
 }
 
 func (err *HistoryError) Error() string {
-	return fmt.Sprintf("statemachine: history entry %d: %s", err.Index, err.Failure)
+	return fmt.Sprintf("statemachine: history entry %d is invalid", err.Index)
 }
 
 // ValidateHistory verifies append-only continuity from snapshot and returns

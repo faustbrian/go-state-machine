@@ -34,6 +34,21 @@ if err := store.Migrate(ctx); err != nil { /* handle */ }
 Custom codecs let applications preserve stable serialized identifiers even if
 Go symbol names change.
 
+`postgres.New` applies conservative default bounds. When the machine was
+compiled with custom limits, copy those limits into PostgreSQL persistence:
+
+```go
+limits := postgres.DefaultLimits()
+limits.Machine = machineLimits
+store, err := postgres.NewWithLimits(options, limits)
+```
+
+The PostgreSQL limits also bound instance identifiers, encoded states and
+events, stable identifiers, aggregate JSON result size, returned history bytes,
+and claimed outbox bytes. Invalid or oversized values are rejected before a
+transaction begins or before another returned record is decoded or leased.
+Existing callers of `New` retain the default behavior without an API migration.
+
 `CompareAndTransition` performs one database transaction:
 
 1. update the instance only when lock version and prior state match;
@@ -51,6 +66,10 @@ A zero limit uses `DefaultHistoryPageLimit`; values above
 `MaxHistoryPageLimit` are rejected.
 Use `ValidateHistory` before trusting imported or externally transferred
 history.
+
+PostgreSQL retry and dead-letter rows persist the marker `redacted`, never the
+publisher's error text. Preserve a safe error classification in separate
+application-owned observability when operational diagnosis requires it.
 
 Call `statemachinetest.StoreContract` from custom store tests. The contract does
 not replace backend-specific transaction, crash, and contention tests.

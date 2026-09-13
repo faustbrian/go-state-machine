@@ -2,12 +2,10 @@ package postgres
 
 import (
 	"errors"
-	"strings"
 	"testing"
 	"time"
-	"unicode/utf8"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
 func TestResultCodecFailurePaths(t *testing.T) {
@@ -58,23 +56,21 @@ func TestResultCodecFailurePaths(t *testing.T) {
 	if _, _, err := failingStore.CompareAndTransition(t.Context(), "one", 0, result, time.Time{}); !errors.Is(err, wantErr) {
 		t.Fatalf("transition codec error = %v", err)
 	}
-	if err := failingStore.SaveSnapshot(t.Context(), statemachine.Snapshot[string]{State: "a"}); !errors.Is(err, wantErr) {
+	if err := failingStore.SaveSnapshot(t.Context(), statemachine.Snapshot[string]{
+		InstanceID: "one", State: "a", DefinitionVersion: "v1",
+	}); !errors.Is(err, wantErr) {
 		t.Fatalf("snapshot codec error = %v", err)
 	}
 }
 
-func TestBoundedErrorTextPreservesUTF8(t *testing.T) {
+func TestPersistedErrorTextIsRedacted(t *testing.T) {
 	t.Parallel()
 
-	text := boundedErrorText(errors.New(strings.Repeat("€", 2_000)))
-	if len(text) > maxErrorBytes || !utf8.ValidString(text) {
-		t.Fatalf("bounded error has %d bytes and valid=%t", len(text), utf8.ValidString(text))
-	}
 	if boundedErrorText(nil) != "" {
 		t.Fatal("nil error produced text")
 	}
-	if boundedErrorText(errors.New("short")) != "short" {
-		t.Fatal("short error changed")
+	if boundedErrorText(errors.New("sensitive")) != "redacted" {
+		t.Fatal("error was not redacted")
 	}
 }
 
