@@ -26,6 +26,25 @@ entry through every required step. Nil hooks are identity conversions. Missing
 steps return `ErrMissingMigration`; hook failures return `MigrationError`
 without rendering state or event values.
 
+Direct evolution uses finite defaults: at most 256 migration records, 10,000
+history entries, 100,000 total migration-edge applications across the snapshot
+and history, 10,000 carried effects, 1 MiB per effect payload, 16 MiB of carried
+payload occurrences in total, and 256 UTF-8 bytes per version identifier.
+`CompileEvolutionWithLimits` accepts a complete, positive `EvolutionLimits` to
+select different finite bounds; an all-zero value selects the defaults, while
+partial or nonpositive limits return `ErrInvalidEvolution`. The selected limits
+are copied into the compiled evolution. Over-budget inputs return
+`ErrLimitExceeded` with zero snapshot and nil history before any migration hook
+or output-sized allocation. An empty target returns `ErrInvalidEvolution`
+first; otherwise a pre-canceled context returns its error before size checks.
+
+Migration hooks are application-owned code. The library checks cancellation
+between calls but cannot preempt a running hook, make its side effects
+transactional, or bound its CPU use or returned state/event size. State and
+event types are shallow `comparable` values; callers own referenced data and
+large inline values. Retrying a migration may invoke the same hooks again, so
+hooks with side effects need application-level idempotency.
+
 Recommended upgrade sequence:
 
 1. deploy code that understands old and new serialized identifiers;

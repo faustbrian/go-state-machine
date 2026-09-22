@@ -12,6 +12,12 @@ migrations pass. Existing consumers must remain on released v1 without local
 
 ### Security
 
+- Bound direct definition-evolution compilation and migration by graph,
+  history, step, version, effect-count, and payload budgets before callbacks
+  or output allocation. Previously accepted oversized migrations now return
+  `ErrLimitExceeded`; applications needing larger finite limits can use
+  `CompileEvolutionWithLimits`.
+
 - Bound direct effect execution by count, per-payload bytes, and aggregate
   payload bytes before allocation or callbacks. Applications with larger
   compiled plans must configure finite `runner.Options.Limits` explicitly;

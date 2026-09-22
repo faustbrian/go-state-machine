@@ -24,7 +24,7 @@ boundaries.
 
 | Threat | Control and evidence boundary |
 | --- | --- |
-| Oversized definitions, replay, metadata, effects, or payloads | `statemachine.Limits` bounds compilation. The public direct `runner.Execute` boundary separately enforces finite count, per-payload, and aggregate-payload byte limits before allocation or callbacks; callers may configure positive limits for custom compiled plans. `postgres.NewWithLimits` copies machine limits and adds encoded identifier, state, event, and aggregate-result bounds before database work. PostgreSQL reads are checked before decode or return. |
+| Oversized definitions, replay, metadata, effects, or payloads | `statemachine.Limits` bounds compilation. Direct `CompileEvolution` and `Evolution.Migrate` apply copied finite graph, history, step, version, carried-effect, and payload limits before callbacks or proportional allocations; callers may select complete positive `EvolutionLimits`. The public direct `runner.Execute` boundary separately enforces finite count, per-payload, and aggregate-payload byte limits before allocation or callbacks; callers may configure positive limits for custom compiled plans. `postgres.NewWithLimits` copies machine limits and adds encoded identifier, state, event, and aggregate-result bounds before database work. PostgreSQL reads are checked before decode or return. |
 | Forged persistence result | Stores require identity fields, optimistic lock version, and previous-state equality. PostgreSQL updates state, history, and outbox in one transaction. Callers still validate imported history against the compiled machine. |
 | Replay, duplicate publication, and reordering | History sequences are unique and ascending. Conditional state updates reject stale writers. Outbox rows are unique per instance, sequence, and effect index; claims are ordered and leased with `SKIP LOCKED`. Publication is explicitly at least once, so consumers must deduplicate. |
 | SQL injection | Values are query parameters. The only interpolated identifier is a schema accepted by a strict lowercase identifier allowlist. |
@@ -85,6 +85,20 @@ boundaries.
   telemetry by default.
 - Review condition: a standard safe diagnostic projection is added or a common
   logging integration automatically expands structured errors.
+
+### AR-5: opaque generic migration values can be large
+
+- Severity: medium.
+- Owner: adopting application.
+- Rationale: `State` and `Event` may be large inline comparable values or hold
+  references; migration hooks are caller code and may expand returned values.
+  The library cannot inspect arbitrary referents or preempt a running hook.
+- Mitigation: validate and bound serialized values before constructing history,
+  use compact state/event types, keep hooks finite and side-effect aware, and
+  select finite `EvolutionLimits` for direct migration work. The library bounds
+  the migration graph, history, step applications, versions, and carried effects.
+- Review condition: an untrusted generic-value decoder or library-owned hook
+  runtime is added, or a universal byte-bound claim is proposed.
 
 ## Out-of-scope trust failures
 
