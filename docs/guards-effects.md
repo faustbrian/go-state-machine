@@ -54,3 +54,17 @@ outcome. It checks cancellation, contains handler panics, prevents nested calls
 on the same runner/context, classifies retryable versus permanent failures, and
 optionally records every attempt. A runner call invokes each reached effect at
 most once, but process crashes and durable delivery require outbox semantics.
+
+Direct execution defaults to at most 3,000 effects, 1 MiB per effect payload,
+and 16 MiB of payload bytes across the plan. `runner.Options.Limits` can set
+larger or smaller positive finite limits for a caller's compiled plan. The
+zero-value limits use the defaults; partial or nonpositive limits are invalid.
+An over-limit plan returns `statemachine.ErrLimitExceeded` before invoking any
+handler, clock, classifier, or recorder, and without returning records. A plan
+produced under custom machine limits is not automatically accepted by the
+default runner: configure both boundaries deliberately.
+
+A canceled context returns its error without recording an unattempted effect.
+An attempt completed before cancellation retains its record; cancellation then
+stops the call before the next effect. External effects already performed by a
+handler cannot be rolled back by the runner.

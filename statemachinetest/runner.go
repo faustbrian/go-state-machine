@@ -24,6 +24,12 @@ func (handler conformanceHandler) Handle(ctx context.Context, effect statemachin
 	return handler(ctx, effect)
 }
 
+type conformanceRecorder func(context.Context, runner.Record) error
+
+func (recorder conformanceRecorder) Record(ctx context.Context, record runner.Record) error {
+	return recorder(ctx, record)
+}
+
 // RunnerContract verifies ordering, cancellation, and panic containment.
 func RunnerContract(t *testing.T, factory RunnerFactory) {
 	t.Helper()
@@ -44,19 +50,28 @@ func RunnerContract(t *testing.T, factory RunnerFactory) {
 	})
 
 	t.Run("cancellation", func(t *testing.T) {
-		called := false
+		called, clocked, recorded := false, false, false
 		executor, err := factory(conformanceHandler(func(context.Context, statemachine.Effect) error {
 			called = true
 			return nil
-		}), runner.Options{})
+		}), runner.Options{
+			Clock: func() time.Time {
+				clocked = true
+				return time.Time{}
+			},
+			Recorder: conformanceRecorder(func(context.Context, runner.Record) error {
+				recorded = true
+				return nil
+			}),
+		})
 		if err != nil {
 			t.Fatalf("construct executor: %v", err)
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		_, err = executor.Execute(ctx, []statemachine.Effect{{Kind: "canceled"}})
-		if !errors.Is(err, context.Canceled) || called {
-			t.Fatalf("error = %v, called = %t", err, called)
+		records, err := executor.Execute(ctx, []statemachine.Effect{{Kind: "canceled"}})
+		if !errors.Is(err, context.Canceled) || records != nil || called || clocked || recorded {
+			t.Fatalf("error = %v, records = %d, called = %t, clocked = %t, recorded = %t", err, len(records), called, clocked, recorded)
 		}
 	})
 

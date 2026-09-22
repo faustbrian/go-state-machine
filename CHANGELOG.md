@@ -12,6 +12,11 @@ migrations pass. Existing consumers must remain on released v1 without local
 
 ### Security
 
+- Bound direct effect execution by count, per-payload bytes, and aggregate
+  payload bytes before allocation or callbacks. Applications with larger
+  compiled plans must configure finite `runner.Options.Limits` explicitly;
+  cancellation no longer records effects that were never attempted.
+
 - Enforce machine and encoded-size limits on PostgreSQL state, history, and
   outbox boundaries before database work, redact persisted callback failures,
   and make default public error strings safe to log without exposing payloads
