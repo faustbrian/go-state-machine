@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
 func TestTransitionReturnsStructuredGuardRejection(t *testing.T) {
@@ -55,7 +55,7 @@ func TestTransitionContainsGuardPanic(t *testing.T) {
 	if guardPanic.TransitionID != "pay" {
 		t.Fatalf("transition ID = %q, want pay", guardPanic.TransitionID)
 	}
-	if guardPanic.Error() != "statemachine: guard panicked in transition pay" {
+	if guardPanic.Error() != statemachine.ErrGuardPanic.Error() {
 		t.Fatalf("error disclosed panic value: %q", guardPanic.Error())
 	}
 }

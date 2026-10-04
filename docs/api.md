@@ -67,10 +67,11 @@ package also exports `Codec`, `TextCodec`, `Options`, `New`, `Migrate`, and
 
 ## Effect execution
 
-The `runner` package exports `Handler`, `Recorder`, `Options`, `Runner`,
-`Record`, `Outcome`, and `Classifier`. Construction and execution errors are
-`ErrMissingHandler`, `ErrReentrant`, `ErrHandlerPanic`, `EffectError`, and
-`RecorderError`.
+The `runner` package exports `Handler`, `Recorder`, `Options`, `Limits`,
+`DefaultLimits`, `Runner`, `Record`, `Outcome`, and `Classifier`. Construction
+and execution errors are `ErrMissingHandler`, `ErrInvalidLimits`,
+`ErrReentrant`, `ErrHandlerPanic`, `EffectError`, `RecorderError`, and the root
+`ErrLimitExceeded`.
 
 The `outbox` package exports `Message`, `Claim`, `ClaimRequest`, `LeaseRef`,
 `Store`, `Publisher`, `RelayOptions`, `Relay`, `Result`, and `FailureClass`.

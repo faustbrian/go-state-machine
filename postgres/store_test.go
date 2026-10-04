@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/faustbrian/go-state-machine/postgres"
+	"github.com/faustbrian/go-state-machine/v2/postgres"
 )
 
 func TestNewValidatesDependenciesAndSchema(t *testing.T) {

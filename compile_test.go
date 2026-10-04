@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
 func TestCompileRejectsInvalidGraphs(t *testing.T) {

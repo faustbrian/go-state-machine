@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
 // Renderer converts typed states and events through explicit label functions.

@@ -33,6 +33,11 @@ Do not log state contexts, effect payloads, database credentials, or correlation
 identifiers unless the application has explicitly classified and sanitized
 them. Use stable error categories and bounded metadata instead.
 
+Public `Error()` strings omit rejection text, transition and message
+identifiers, codec or driver messages, and callback causes. Typed error fields
+and wrapped causes remain intentionally inspectable; do not expand or serialize
+them without an explicit allowlist.
+
 ## Recovery
 
 After a crash, load the latest validated snapshot and bounded history, validate

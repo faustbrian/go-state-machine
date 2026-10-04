@@ -27,7 +27,7 @@ type ReplayError struct {
 }
 
 func (err *ReplayError) Error() string {
-	return fmt.Sprintf("statemachine: replay input %d failed: %v", err.Index, err.Cause)
+	return fmt.Sprintf("statemachine: replay input %d failed", err.Index)
 }
 
 // Unwrap exposes the transition failure to errors.Is and errors.As.

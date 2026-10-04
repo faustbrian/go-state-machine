@@ -3,7 +3,39 @@
 All notable changes to this project are documented in this file. The format is
 based on Keep a Changelog, and the project follows Semantic Versioning.
 
-## [Unreleased]
+## [Unreleased] (v2.0.0)
+
+The root source tree now uses the planned `/v2` module path. Version 2 remains
+unpublished and non-releasable until its release gates and owned-consumer
+migrations pass. Existing consumers must remain on released v1 without local
+`replace` directives.
+
+### Security
+
+- Refuse oversized definition effects, payloads, sources, and guards before
+  copying or constructing the compiled graph. Resource-limit diagnostics now
+  take precedence over semantic diagnostics for rejected definitions.
+  Compilation also defaults to 16 MiB of copied effect payloads and 100,000
+  aggregate elements, charging repeated occurrences separately. Configure
+  `Limits.MaxCompiledEffectPayloadBytes` and `Limits.MaxCompiledElements` for
+  larger finite definitions; zero selects the default for these new fields.
+
+- Bound direct definition-evolution compilation and migration by graph,
+  history, step, version, effect-count, and payload budgets before callbacks
+  or output allocation. Previously accepted oversized migrations now return
+  `ErrLimitExceeded`; applications needing larger finite limits can use
+  `CompileEvolutionWithLimits`.
+
+- Bound direct effect execution by count, per-payload bytes, and aggregate
+  payload bytes before allocation or callbacks. Applications with larger
+  compiled plans must configure finite `runner.Options.Limits` explicitly;
+  cancellation no longer records effects that were never attempted.
+
+- Enforce machine and encoded-size limits on PostgreSQL state, history, and
+  outbox boundaries before database work, redact persisted callback failures,
+  and make default public error strings safe to log without exposing payloads
+  or wrapped causes. Applications using custom machine limits should construct
+  the PostgreSQL store with `postgres.NewWithLimits`.
 
 ### Changed
 

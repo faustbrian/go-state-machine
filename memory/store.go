@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
 // Store is a concurrency-safe in-memory state machine store.

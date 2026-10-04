@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	statemachine "github.com/faustbrian/go-state-machine"
-	"github.com/faustbrian/go-state-machine/diagram"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
+	"github.com/faustbrian/go-state-machine/v2/diagram"
 )
 
 func FuzzSerializedEvent(f *testing.F) {
