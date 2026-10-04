@@ -13,6 +13,11 @@ on:
         required: false
         default: false
         type: boolean
+      coverage_diagnostic:
+        description: Run development-only native coverage diagnostics instead of aggregate CI
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -20,10 +25,77 @@ permissions:
 
 jobs:
   ci:
+    if: github.event_name != 'workflow_dispatch' || !inputs.coverage_diagnostic
     uses: faustbrian/go-library-tools/.github/workflows/library-ci.yml@531e4db50fd81a7201257a7b488a0cf22d333aca # v1.4.0 W14 enforcement
     with:
       tooling_sha: 531e4db50fd81a7201257a7b488a0cf22d333aca
       release_dry_run: ${{ inputs.release_dry_run || false }}
+
+  coverage-diagnostic:
+    name: Native coverage diagnostic (development only)
+    if: github.event_name == 'workflow_dispatch' && inputs.coverage_diagnostic
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      GOWORK: off
+      GOTOOLCHAIN: local
+      GOMAXPROCS: '2'
+      GOFLAGS: -p=1
+    steps:
+      - name: Initialize task-owned caches
+        env:
+          TASK_ROOT: ${{ runner.temp }}/golib-coverage-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${TASK_ROOT}/build" "${TASK_ROOT}/modules" "${TASK_ROOT}/tmp"
+          printf 'GOCACHE=%s\nGOMODCACHE=%s\nGOTMPDIR=%s\n' \
+            "${TASK_ROOT}/build" "${TASK_ROOT}/modules" "${TASK_ROOT}/tmp" >>"${GITHUB_ENV}"
+      - name: Check out producer at dispatch head
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          path: producer
+          persist-credentials: false
+      - name: Check out immutable diagnostic tooling
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: faustbrian/go-library-tools
+          ref: 1b1d18da0337bcdc0849e6fe8595e7f6a04c85b8
+          path: coverage-tooling
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.27.0'
+          cache: false
+      - name: Build diagnostic tooling
+        working-directory: coverage-tooling
+        run: |
+          set -euo pipefail
+          mkdir -p "${GOCACHE}" "${GOMODCACHE}" "${GOTMPDIR}"
+          go build -p 1 -trimpath -buildvcs=false -o "${GOTMPDIR}/golib" ./cmd/golib
+      - name: Run root native coverage with declared services
+        working-directory: producer
+        run: |
+          set -euo pipefail
+          "${GOTMPDIR}/golib" coverage --module .
+      - name: Remove task-owned diagnostic resources
+        if: always()
+        env:
+          TASK_ROOT: ${{ runner.temp }}/golib-coverage-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          if [[ -d "${TASK_ROOT}" ]]; then
+            find "${TASK_ROOT}" -type d -exec chmod u+w {} +
+            find "${TASK_ROOT}" -depth -delete
+          fi
+          for checkout in "${GITHUB_WORKSPACE}/producer" "${GITHUB_WORKSPACE}/coverage-tooling"; do
+            if [[ -d "${checkout}" ]]; then
+              find "${checkout}" -type d -exec chmod u+w {} +
+              find "${checkout}" -depth -delete
+            fi
+          done
 
   required:
     name: Required
