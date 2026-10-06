@@ -3,7 +3,7 @@ module github.com/faustbrian/go-state-machine
 go 1.27.0
 
 require (
-	github.com/jackc/pgx/v5 v5.10.0
+	github.com/jackc/pgx/v5 v5.11.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.43.0
 )
 

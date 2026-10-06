@@ -7,6 +7,12 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ### Changed
 
+- Upgrade the PostgreSQL driver to pgx v5.11.0 for connection and
+  cancellation cleanup fixes. Caller-owned pools using text results now
+  receive timestamps in the client-local zone without changing the instant;
+  set the timestamptz codec's ScanLocation when a fixed zone is required.
+  Review libpq-compatible URI parsing changes for custom connection strings.
+
 - Adopt the checksum-verified `go-library-tools` v1.4.0 CLI and immutable W14
   reusable workflow, including strict online specification validation, without
   changing the state-machine API or runtime behavior.
@@ -17,6 +23,12 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 - Adopt `go-library-tools` v1.0.6 while retaining repository-owned policy,
   evidence, fixtures, and API baselines.
+
+### Fixed
+
+- Preserve atomic PostgreSQL history and outbox persistence with caller-owned
+  simple-protocol pools by passing JSON history as text rather than bytea.
+  Binary effect payloads and the persisted result schema remain unchanged.
 
 ### Documentation
 

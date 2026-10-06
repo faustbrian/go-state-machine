@@ -239,7 +239,7 @@ RETURNING lock_version`, store.schema), document.Next, document.DefinitionVersio
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
 INSERT INTO %s.state_machine_history
     (instance_id, sequence, result, occurred_at)
-VALUES ($1, $2, $3, $4)`, store.schema), id, nextLock, encoded, occurredAt)
+VALUES ($1, $2, $3, $4)`, store.schema), id, nextLock, string(encoded), occurredAt)
 	if err != nil {
 		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, fmt.Errorf("postgres: append history: %w", err)
 	}
