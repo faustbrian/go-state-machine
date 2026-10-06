@@ -5,13 +5,20 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-06
+
 ### Changed
+
+- Raise the minimum Go version from 1.26.6 to 1.27.0. Upgrade fixed
+  toolchains before adopting this release, or permit Go toolchain selection.
 
 - Upgrade the PostgreSQL driver to pgx v5.11.0 for connection and
   cancellation cleanup fixes. Caller-owned pools using text results now
   receive timestamps in the client-local zone without changing the instant;
   set the timestamptz codec's ScanLocation when a fixed zone is required.
   Review libpq-compatible URI parsing changes for custom connection strings.
+  Also review keyword/value backslash handling, especially Windows TLS
+  paths, against pgx v5.11.0 configuration guidance.
 
 - Adopt the checksum-verified `go-library-tools` v1.4.0 CLI and immutable W14
   reusable workflow, including strict online specification validation, without
