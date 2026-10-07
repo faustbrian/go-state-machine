@@ -152,11 +152,28 @@ func TestNewRejectsIncompleteLimits(t *testing.T) {
 		{MaxEffects: 3},
 		{MaxEffects: 3, MaxEffectPayloadBytes: 10},
 		{MaxEffects: -1, MaxEffectPayloadBytes: 10, MaxTotalPayloadBytes: 20},
+		{MaxEffects: 0, MaxEffectPayloadBytes: 10, MaxTotalPayloadBytes: 20},
 		{MaxEffects: 3, MaxEffectPayloadBytes: 0, MaxTotalPayloadBytes: 20},
 	} {
-		if _, err := runner.New(handler, runner.Options{Limits: limits}); !errors.Is(err, runner.ErrInvalidLimits) {
-			t.Fatalf("limits = %#v, error = %v, want ErrInvalidLimits", limits, err)
+		if executor, err := runner.New(handler, runner.Options{Limits: limits}); executor != nil || !errors.Is(err, runner.ErrInvalidLimits) {
+			t.Fatalf("limits = %#v, runner = %#v, error = %v, want nil runner and ErrInvalidLimits", limits, executor, err)
 		}
+	}
+}
+
+func TestNewAcceptsInclusiveMinimumLimits(t *testing.T) {
+	handler := handlerFunc(func(context.Context, statemachine.Effect) error { return nil })
+	executor, err := runner.New(handler, runner.Options{Limits: runner.Limits{
+		MaxEffects: 1, MaxEffectPayloadBytes: 1, MaxTotalPayloadBytes: 1,
+	}})
+	if err != nil || executor == nil {
+		t.Fatalf("minimum limits: runner = %#v, error = %v", executor, err)
+	}
+	records, err := executor.Execute(context.Background(), []statemachine.Effect{
+		{Kind: "one", Payload: []byte("x")},
+	})
+	if err != nil || len(records) != 1 || records[0].Outcome != runner.OutcomeSucceeded {
+		t.Fatalf("minimum execution: records = %#v, error = %v", records, err)
 	}
 }
 
