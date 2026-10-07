@@ -3,13 +3,15 @@
 All notable changes to this project are documented in this file. The format is
 based on Keep a Changelog, and the project follows Semantic Versioning.
 
-## [Unreleased] (v2.0.0)
+## [Unreleased]
 
-The root source tree now uses the `/v2` module path. Version 2 is an unpublished
-release candidate requiring release qualification before publication. Actual
-public consumer verification and affected owned adoption follow publication
-before package security closure. Existing consumers must remain on released v1
-without local `replace` directives until v2 is published.
+## [2.0.0] - 2026-10-07
+
+The root module uses the `/v2` import path. Migration requires changing imports,
+reviewing error-string and persisted-error changes, and configuring finite
+machine, runner, evolution and PostgreSQL limits for larger workloads. Do not
+replace the v1 module with this source tree. Public availability and the
+supported released line are described in README and SECURITY.
 
 ### Security
 

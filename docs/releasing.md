@@ -18,3 +18,12 @@ After publication, migrate consumers by changing imports to the `/v2` module,
 reviewing error-string and persisted-error changes, configuring PostgreSQL
 limits where needed, and running each consumer's own compatibility gates. Do
 not claim rollback safety until the persisted-data overlap is verified.
+
+Before publication, reconcile the dated major changelog and
+[published-source security disposition](security/release-disposition.md) with
+the exact selected source. Retain applicable runtime qualification when only
+documentation changes; assess the final source's required CI separately.
+After publication, record the actual fixed artifact and consumer result, then
+coordinate any warranted advisory using the private reporting policy. Do not
+describe an unpublished candidate or documentation-only follow-up as a new
+security-fixed release.

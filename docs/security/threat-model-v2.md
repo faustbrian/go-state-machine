@@ -2,7 +2,14 @@
 
 Status: active
 
+Model version: 2
+
+Reviewed: 2026-10-07
+
 Owner: go-state-machine maintainers
+
+Next maintainer residual-risk review: 2026-11-07, or sooner on any listed
+review condition. This schedule does not extend an overdue or changed risk.
 
 Review condition: any new persistence backend, executable effect path,
 untrusted parser, implicit I/O, or change to replay, leasing, or limits
