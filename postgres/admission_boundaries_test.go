@@ -211,6 +211,12 @@ func TestTransitionAdmissionIndependentInclusiveBoundaries(t *testing.T) {
 		{"missing transition", func(r *statemachine.Result[string, string]) { r.TransitionID = "" }, statemachine.ErrInvalidStoreInput},
 		{"version exact", func(r *statemachine.Result[string, string]) { r.DefinitionVersion = "123" }, nil},
 		{"version over", func(r *statemachine.Result[string, string]) { r.DefinitionVersion = "1234" }, statemachine.ErrLimitExceeded},
+		{"previous exact", func(r *statemachine.Result[string, string]) { r.Previous = "123" }, nil},
+		{"previous over", func(r *statemachine.Result[string, string]) { r.Previous = "1234" }, statemachine.ErrLimitExceeded},
+		{"next exact", func(r *statemachine.Result[string, string]) { r.Next = "123" }, nil},
+		{"next over", func(r *statemachine.Result[string, string]) { r.Next = "1234" }, statemachine.ErrLimitExceeded},
+		{"event exact", func(r *statemachine.Result[string, string]) { r.Event = "123" }, nil},
+		{"event over", func(r *statemachine.Result[string, string]) { r.Event = "1234" }, statemachine.ErrLimitExceeded},
 		{"transition exact", func(r *statemachine.Result[string, string]) { r.TransitionID = "123" }, nil},
 		{"transition over", func(r *statemachine.Result[string, string]) { r.TransitionID = "1234" }, statemachine.ErrLimitExceeded},
 		{"correlation exact", func(r *statemachine.Result[string, string]) { r.Metadata.CorrelationID = "123" }, nil},
@@ -243,6 +249,7 @@ func TestTransitionAdmissionIndependentInclusiveBoundaries(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			limits := DefaultLimits()
 			limits.MaxIdentifierBytes = 3
+			limits.MaxEncodedStateBytes, limits.MaxEncodedEventBytes = 3, 3
 			limits.Machine.MaxMetadataBytes = 3
 			limits.Machine.MaxEffectsPerPhase = 1
 			limits.Machine.MaxEffectPayloadBytes = 3
@@ -256,7 +263,7 @@ func TestTransitionAdmissionIndependentInclusiveBoundaries(t *testing.T) {
 			tx.exec = func(_ context.Context, query string, values ...any) (commandResult, error) {
 				if strings.Contains(query, "state_machine_history") {
 					var saved resultDocument
-					if err := json.Unmarshal([]byte(values[2].(string)), &saved); err != nil || saved.DefinitionVersion != string(result.DefinitionVersion) || saved.TransitionID != string(result.TransitionID) || saved.Metadata != result.Metadata || len(saved.Effects) != len(result.Effects) {
+					if err := json.Unmarshal([]byte(values[2].(string)), &saved); err != nil || saved.Previous != result.Previous || saved.Next != result.Next || saved.Event != result.Event || saved.DefinitionVersion != string(result.DefinitionVersion) || saved.TransitionID != string(result.TransitionID) || saved.Metadata != result.Metadata || len(saved.Effects) != len(result.Effects) {
 						t.Error("persisted history differs from admitted input")
 					}
 				}
@@ -277,7 +284,7 @@ func TestTransitionAdmissionIndependentInclusiveBoundaries(t *testing.T) {
 				if !errors.Is(err, test.want) || began || committed || instance.ID != "" || history.InstanceID != "" {
 					t.Fatalf("rejected result crossed acquisition/publication: err=%v began=%v committed=%v", err, began, committed)
 				}
-			} else if err != nil || !began || !committed || instance.State != "b" || instance.DefinitionVersion != result.DefinitionVersion || instance.LockVersion != 1 || history.Sequence != 1 || history.Result.TransitionID != result.TransitionID || history.Result.Metadata != result.Metadata || persistedEffects != len(result.Effects) {
+			} else if err != nil || !began || !committed || instance.State != result.Next || instance.DefinitionVersion != result.DefinitionVersion || instance.LockVersion != 1 || history.Sequence != 1 || history.Result.Previous != result.Previous || history.Result.Next != result.Next || history.Result.Event != result.Event || history.Result.TransitionID != result.TransitionID || history.Result.Metadata != result.Metadata || persistedEffects != len(result.Effects) {
 				t.Fatalf("inclusive admitted result not persisted intact: err=%v began=%v committed=%v effects=%d", err, began, committed, persistedEffects)
 			}
 		})
