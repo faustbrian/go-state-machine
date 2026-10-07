@@ -260,6 +260,9 @@ FROM %s.state_machine_instances WHERE id = $1`, store.schema), id).Scan(&encoded
 	if err != nil {
 		return statemachine.Instance[S]{}, wrapError("load instance", err)
 	}
+	if lockVersion < 0 {
+		return statemachine.Instance[S]{}, statemachine.ErrInvalidStoreInput
+	}
 	if len(encodedState) > limits.MaxEncodedStateBytes || len(version) > limits.MaxIdentifierBytes {
 		return statemachine.Instance[S]{}, fmt.Errorf("%w: persisted instance", statemachine.ErrLimitExceeded)
 	}
@@ -319,6 +322,10 @@ RETURNING lock_version`, store.schema), document.Next, document.DefinitionVersio
 	if err != nil {
 		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, wrapError("update instance", err)
 	}
+	if nextLock <= 0 {
+		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, statemachine.ErrInvalidStoreInput
+	}
+	nextVersion := uint64(nextLock)
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
 INSERT INTO %s.state_machine_history
     (instance_id, sequence, result, occurred_at)
@@ -351,10 +358,10 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $7)`, store.schema), outboxID, id, nextLock,
 		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, wrapError("commit transition", err)
 	}
 	instance := statemachine.Instance[S]{
-		ID: id, State: result.Next, DefinitionVersion: result.DefinitionVersion, LockVersion: uint64(nextLock),
+		ID: id, State: result.Next, DefinitionVersion: result.DefinitionVersion, LockVersion: nextVersion,
 	}
 	entry := statemachine.HistoryEntry[S, E]{
-		InstanceID: id, Sequence: uint64(nextLock), Result: cloneResult(result), OccurredAt: occurredAt,
+		InstanceID: id, Sequence: nextVersion, Result: cloneResult(result), OccurredAt: occurredAt,
 	}
 	return instance, entry, nil
 }
@@ -446,6 +453,9 @@ ORDER BY sequence LIMIT $3`, store.schema), id, after, limit)
 		var occurredAt time.Time
 		if err := rows.Scan(&sequence, &encoded, &occurredAt); err != nil {
 			return nil, wrapError("scan history", err)
+		}
+		if sequence <= 0 {
+			return nil, statemachine.ErrInvalidStoreInput
 		}
 		if !consumeSize(&remainingBytes, len(encoded), 1) {
 			return nil, fmt.Errorf("%w: history page bytes", statemachine.ErrLimitExceeded)
@@ -554,6 +564,9 @@ FROM %s.state_machine_snapshots WHERE instance_id = $1`, store.schema), id).Scan
 	}
 	if err != nil {
 		return statemachine.Snapshot[S]{}, wrapError("load snapshot", err)
+	}
+	if lockVersion < 0 {
+		return statemachine.Snapshot[S]{}, statemachine.ErrInvalidStoreInput
 	}
 	if len(encodedState) > limits.MaxEncodedStateBytes || len(version) > limits.MaxIdentifierBytes {
 		return statemachine.Snapshot[S]{}, fmt.Errorf("%w: persisted snapshot", statemachine.ErrLimitExceeded)

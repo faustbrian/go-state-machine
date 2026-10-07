@@ -37,6 +37,11 @@ migrations pass. Existing consumers must remain on released v1 without local
   or wrapped causes. Applications using custom machine limits should construct
   the PostgreSQL store with `postgres.NewWithLimits`.
 
+- Reject malformed negative persisted versions and nonpositive history or
+  transition sequences before decoding, returning results, or additional
+  writes. Zero instance and snapshot versions remain valid; outbox claims
+  retain positive-sequence admission before leasing.
+
 ## [1.0.2] - 2026-10-07
 
 ### Changed

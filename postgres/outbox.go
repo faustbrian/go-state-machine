@@ -46,7 +46,7 @@ LIMIT $2`, store.schema), now, request.Limit)
 	type candidate struct {
 		id         string
 		instanceID string
-		sequence   int64
+		sequence   uint64
 		index      int
 		kind       string
 		payload    []byte
@@ -57,11 +57,17 @@ LIMIT $2`, store.schema), now, request.Limit)
 	remainingBytes := limits.MaxClaimBytes
 	for rows.Next() {
 		var item candidate
-		if err := rows.Scan(&item.id, &item.instanceID, &item.sequence, &item.index, &item.kind, &item.payload, &item.occurredAt, &item.attempts); err != nil {
+		var sequence int64
+		if err := rows.Scan(&item.id, &item.instanceID, &sequence, &item.index, &item.kind, &item.payload, &item.occurredAt, &item.attempts); err != nil {
 			rows.Close()
 			return nil, wrapError("scan outbox claim", err)
 		}
-		if item.id == "" || item.instanceID == "" || item.sequence <= 0 || item.index < 0 || item.kind == "" || item.attempts < 0 {
+		if sequence <= 0 {
+			rows.Close()
+			return nil, statemachine.ErrInvalidStoreInput
+		}
+		item.sequence = uint64(sequence)
+		if item.id == "" || item.instanceID == "" || item.index < 0 || item.kind == "" || item.attempts < 0 {
 			rows.Close()
 			return nil, statemachine.ErrInvalidStoreInput
 		}
@@ -105,7 +111,7 @@ WHERE id = $4`, store.schema), request.Owner, token, leasedUntil, item.id)
 		claims = append(claims, outbox.Claim{
 			Message: outbox.Message{
 				ID: item.id, InstanceID: statemachineInstanceID(item.instanceID),
-				Sequence: uint64(item.sequence), Index: item.index,
+				Sequence: item.sequence, Index: item.index,
 				Effect:     statemachineEffect(item.kind, item.payload),
 				OccurredAt: item.occurredAt, Attempts: item.attempts + 1,
 			},
