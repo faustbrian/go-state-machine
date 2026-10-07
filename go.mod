@@ -1,4 +1,4 @@
-module github.com/faustbrian/go-state-machine
+module github.com/faustbrian/go-state-machine/v2
 
 go 1.27.0
 

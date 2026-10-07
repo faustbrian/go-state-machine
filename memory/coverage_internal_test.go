@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
 func TestStoreRemainingValidationAndCancellation(t *testing.T) {

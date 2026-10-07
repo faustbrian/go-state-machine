@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
 // Outcome classifies one effect attempt.
@@ -51,6 +51,28 @@ type Options struct {
 	Clock    func() time.Time
 	Classify Classifier
 	Recorder Recorder
+	Limits   Limits
+}
+
+// Limits bounds one explicit execution plan. All maxima are inclusive.
+type Limits struct {
+	MaxEffects            int
+	MaxEffectPayloadBytes int
+	MaxTotalPayloadBytes  int
+}
+
+// DefaultLimits bounds direct execution without caller configuration.
+func DefaultLimits() Limits {
+	return Limits{
+		MaxEffects:            3_000,
+		MaxEffectPayloadBytes: 1 << 20,
+		MaxTotalPayloadBytes:  16 << 20,
+	}
+}
+
+func (limits Limits) valid() bool {
+	return limits.MaxEffects > 0 && limits.MaxEffectPayloadBytes > 0 &&
+		limits.MaxTotalPayloadBytes > 0
 }
 
 // Runner executes plans serially. It is safe for concurrent independent calls.
@@ -59,10 +81,14 @@ type Runner struct {
 	clock    func() time.Time
 	classify Classifier
 	recorder Recorder
+	limits   Limits
 }
 
 // ErrMissingHandler reports an invalid runner construction.
 var ErrMissingHandler = errors.New("runner: handler is required")
+
+// ErrInvalidLimits reports incomplete or nonpositive execution limits.
+var ErrInvalidLimits = errors.New("runner: invalid limits")
 
 // ErrReentrant reports a nested Execute call on the same runner and context.
 var ErrReentrant = errors.New("runner: reentrant execution")
@@ -80,7 +106,7 @@ type EffectError struct {
 }
 
 func (err *EffectError) Error() string {
-	return fmt.Sprintf("runner: effect %d (%s) ended %s: %v", err.Index, err.Kind, err.Outcome, err.Cause)
+	return fmt.Sprintf("runner: effect %d failed", err.Index)
 }
 
 // Unwrap exposes the handler failure.
@@ -95,7 +121,7 @@ type RecorderError struct {
 }
 
 func (err *RecorderError) Error() string {
-	return fmt.Sprintf("runner: record effect %d: %v", err.Index, err.Cause)
+	return fmt.Sprintf("runner: record effect %d failed", err.Index)
 }
 
 func (err *RecorderError) Unwrap() error {
@@ -107,6 +133,13 @@ func New(handler Handler, options Options) (*Runner, error) {
 	if handler == nil {
 		return nil, ErrMissingHandler
 	}
+	limits := options.Limits
+	if limits == (Limits{}) {
+		limits = DefaultLimits()
+	}
+	if !limits.valid() {
+		return nil, ErrInvalidLimits
+	}
 	clock := options.Clock
 	if clock == nil {
 		clock = time.Now
@@ -117,6 +150,7 @@ func New(handler Handler, options Options) (*Runner, error) {
 	}
 	return &Runner{
 		handler: handler, clock: clock, classify: classifier, recorder: options.Recorder,
+		limits: limits,
 	}, nil
 }
 
@@ -127,11 +161,38 @@ func (runner *Runner) Execute(ctx context.Context, effects []statemachine.Effect
 	if active, _ := ctx.Value(contextKey{}).(*Runner); active == runner {
 		return nil, ErrReentrant
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if len(effects) > runner.limits.MaxEffects {
+		return nil, statemachine.ErrLimitExceeded
+	}
+	totalPayloadBytes := 0
+	for _, effect := range effects {
+		payloadBytes := len(effect.Payload)
+		if payloadBytes > runner.limits.MaxEffectPayloadBytes ||
+			payloadBytes > runner.limits.MaxTotalPayloadBytes-totalPayloadBytes {
+			return nil, statemachine.ErrLimitExceeded
+		}
+		totalPayloadBytes += payloadBytes
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	ctx = context.WithValue(ctx, contextKey{}, runner)
 	records := make([]Record, 0, len(effects))
 	for index, effect := range effects {
+		if err := ctx.Err(); err != nil {
+			return records, err
+		}
 		record := Record{Index: index, Effect: cloneEffect(effect), StartedAt: runner.clock()}
-		handlerErr, panicked := runner.handle(ctx, effect)
+		if err := ctx.Err(); err != nil {
+			return records, err
+		}
+		handlerErr, panicked, attempted := runner.handle(ctx, effect)
+		if !attempted {
+			return records, handlerErr
+		}
 		record.FinishedAt = runner.clock()
 		switch {
 		case panicked:
@@ -160,13 +221,16 @@ func (runner *Runner) Execute(ctx context.Context, effects []statemachine.Effect
 				Index: index, Kind: effect.Kind, Outcome: record.Outcome, Cause: record.Err,
 			}
 		}
+		if err := ctx.Err(); err != nil {
+			return records, err
+		}
 	}
 	return records, nil
 }
 
-func (runner *Runner) handle(ctx context.Context, effect statemachine.Effect) (handlerErr error, panicked bool) {
+func (runner *Runner) handle(ctx context.Context, effect statemachine.Effect) (handlerErr error, panicked bool, attempted bool) {
 	if err := ctx.Err(); err != nil {
-		return err, false
+		return err, false, false
 	}
 	defer func() {
 		if recover() != nil {
@@ -174,7 +238,9 @@ func (runner *Runner) handle(ctx context.Context, effect statemachine.Effect) (h
 			panicked = true
 		}
 	}()
-	return runner.handler.Handle(ctx, cloneEffect(effect)), false
+	input := cloneEffect(effect)
+	attempted = true
+	return runner.handler.Handle(ctx, input), false, attempted
 }
 
 func cloneEffect(effect statemachine.Effect) statemachine.Effect {

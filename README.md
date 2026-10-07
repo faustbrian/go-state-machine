@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/faustbrian/go-state-machine/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-state-machine/actions/workflows/ci.yml)
 [![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-state-machine/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
+[![Coverage](https://img.shields.io/badge/coverage-risk_based_evidence-blue)](CONTRIBUTING.md#verification)
 [![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-state-machine.svg)](https://pkg.go.dev/github.com/faustbrian/go-state-machine)
@@ -18,7 +18,12 @@ durable outbox, and export diagrams.
 It is intentionally not a workflow engine, scheduler, rule engine, queue, saga
 framework, or dependency-injection container.
 
-This is a stable v1 public library and requires Go 1.27.0 or newer.
+The latest published line is stable v1 and requires Go 1.27.0 or newer.
+This checkout contains the planned, unpublished
+`github.com/faustbrian/go-state-machine/v2` source. V2 is preview-only and
+non-releasable until its release and owned-consumer migration gates pass.
+Existing consumers must remain on released v1 and must not use a local
+`replace` directive to consume this checkout as v1.
 
 ## Install
 

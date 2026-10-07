@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
-	"github.com/faustbrian/go-state-machine/memory"
-	"github.com/faustbrian/go-state-machine/statemachinetest"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
+	"github.com/faustbrian/go-state-machine/v2/memory"
+	"github.com/faustbrian/go-state-machine/v2/statemachinetest"
 )
 
 type state string

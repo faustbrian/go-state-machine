@@ -6,10 +6,9 @@ package outbox
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
 // Message is one durable planned effect ready for publication.
@@ -109,7 +108,7 @@ type OperationError struct {
 }
 
 func (err *OperationError) Error() string {
-	return fmt.Sprintf("outbox: %s message %s: %v", err.Operation, err.MessageID, err.Cause)
+	return "outbox: operation failed"
 }
 
 func (err *OperationError) Unwrap() error {

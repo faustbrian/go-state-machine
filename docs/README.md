@@ -7,6 +7,8 @@
 - [Architecture and diagrams](architecture.md)
 - [Guards and effects](guards-effects.md)
 - [Persistence](persistence.md)
+- [Security threat model v2](security/threat-model-v2.md)
+- [Release and migration gates](releasing.md)
 - [Definition evolution](evolution.md)
 - [Outbox integration](outbox.md)
 - [Replay and debugging](replay-debugging.md)

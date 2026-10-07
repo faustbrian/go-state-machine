@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -20,6 +20,33 @@ import (
 type Codec[T any] struct {
 	Encode func(T) (string, error)
 	Decode func(string) (T, error)
+}
+
+// Limits bounds values before PostgreSQL encodes, allocates, or writes them.
+// Machine carries the limits used by the Machine that produced Results.
+type Limits struct {
+	Machine              statemachine.Limits
+	MaxInstanceIDBytes   int
+	MaxEncodedStateBytes int
+	MaxEncodedEventBytes int
+	MaxIdentifierBytes   int
+	MaxResultBytes       int
+	MaxHistoryBytes      int
+	MaxClaimBytes        int
+}
+
+// DefaultLimits returns conservative PostgreSQL persistence bounds.
+func DefaultLimits() Limits {
+	return Limits{
+		Machine:              statemachine.DefaultLimits(),
+		MaxInstanceIDBytes:   512,
+		MaxEncodedStateBytes: 64 << 10,
+		MaxEncodedEventBytes: 64 << 10,
+		MaxIdentifierBytes:   4 << 10,
+		MaxResultBytes:       16 << 20,
+		MaxHistoryBytes:      64 << 20,
+		MaxClaimBytes:        16 << 20,
+	}
 }
 
 // TextCodec persists the underlying value of a string-based identifier.
@@ -49,6 +76,7 @@ type Store[S statemachine.State, E statemachine.Event] struct {
 	newID      func() string
 	clock      func() time.Time
 	marshal    func(any) ([]byte, error)
+	limits     Limits
 }
 
 // ErrInvalidOptions reports missing dependencies or an unsafe schema name.
@@ -58,6 +86,12 @@ var schemaPattern = regexp.MustCompile(`^[a-z_][a-z0-9_]*$`)
 
 // New validates dependencies and constructs a PostgreSQL store.
 func New[S statemachine.State, E statemachine.Event](options Options[S, E]) (*Store[S, E], error) {
+	return NewWithLimits(options, DefaultLimits())
+}
+
+// NewWithLimits constructs a PostgreSQL store with explicit machine and
+// encoded persistence bounds. The limits are copied.
+func NewWithLimits[S statemachine.State, E statemachine.Event](options Options[S, E], limits Limits) (*Store[S, E], error) {
 	if options.Schema == "" {
 		options.Schema = "public"
 	}
@@ -67,11 +101,28 @@ func New[S statemachine.State, E statemachine.Event](options Options[S, E]) (*St
 		options.NewID == nil || options.Clock == nil {
 		return nil, ErrInvalidOptions
 	}
+	if !validLimits(limits) {
+		return nil, ErrInvalidOptions
+	}
 	return &Store[S, E]{
 		pool: poolDatabase{pool: options.Pool}, schema: options.Schema,
 		stateCodec: options.StateCodec, eventCodec: options.EventCodec,
 		newID: options.NewID, clock: options.Clock, marshal: json.Marshal,
+		limits: limits,
 	}, nil
+}
+
+func validLimits(limits Limits) bool {
+	machine := limits.Machine
+	return machine.MaxStates > 0 && machine.MaxTransitions > 0 &&
+		machine.MaxSourcesPerTransition > 0 && machine.MaxGuardsPerTransition > 0 &&
+		machine.MaxEffectsPerPhase > 0 && machine.MaxEffectPayloadBytes > 0 &&
+		machine.MaxCompiledEffectPayloadBytes >= 0 && machine.MaxCompiledElements >= 0 &&
+		machine.MaxMetadataBytes > 0 && machine.MaxReplayInputs > 0 &&
+		limits.MaxInstanceIDBytes > 0 && limits.MaxEncodedStateBytes > 0 &&
+		limits.MaxEncodedEventBytes > 0 && limits.MaxIdentifierBytes > 0 &&
+		limits.MaxResultBytes > 0 && limits.MaxHistoryBytes > 0 &&
+		limits.MaxClaimBytes > 0
 }
 
 // Capabilities reports PostgreSQL's transactional guarantees.
@@ -146,7 +197,7 @@ CREATE INDEX IF NOT EXISTS state_machine_outbox_ready_idx
     WHERE published_at IS NULL AND dead_lettered_at IS NULL;
 `, store.schema))
 	if err != nil {
-		return fmt.Errorf("postgres: migrate: %w", err)
+		return wrapError("migrate", err)
 	}
 	return nil
 }
@@ -159,9 +210,16 @@ func (store *Store[S, E]) Create(ctx context.Context, instance statemachine.Inst
 	if instance.ID == "" || instance.DefinitionVersion == "" || instance.LockVersion != 0 {
 		return statemachine.ErrInvalidStoreInput
 	}
+	limits := store.persistenceLimits()
+	if len(instance.ID) > limits.MaxInstanceIDBytes || len(instance.DefinitionVersion) > limits.MaxIdentifierBytes {
+		return fmt.Errorf("%w: persisted instance identity", statemachine.ErrLimitExceeded)
+	}
 	state, err := store.stateCodec.Encode(instance.State)
 	if err != nil {
-		return fmt.Errorf("postgres: encode state: %w", err)
+		return wrapError("encode state", err)
+	}
+	if len(state) > limits.MaxEncodedStateBytes {
+		return fmt.Errorf("%w: persisted state", statemachine.ErrLimitExceeded)
 	}
 	tag, err := store.pool.Exec(ctx, fmt.Sprintf(`
 INSERT INTO %s.state_machine_instances
@@ -170,7 +228,7 @@ INSERT INTO %s.state_machine_instances
 VALUES ($1, $2, $2, $3, $3, 0)
 ON CONFLICT (id) DO NOTHING`, store.schema), instance.ID, state, instance.DefinitionVersion)
 	if err != nil {
-		return fmt.Errorf("postgres: create instance: %w", err)
+		return wrapError("create instance", err)
 	}
 	if tag.RowsAffected() == 0 {
 		return statemachine.ErrStoreExists
@@ -180,6 +238,16 @@ ON CONFLICT (id) DO NOTHING`, store.schema), instance.ID, state, instance.Defini
 
 // Load returns the current state and lock version.
 func (store *Store[S, E]) Load(ctx context.Context, id statemachine.InstanceID) (statemachine.Instance[S], error) {
+	if err := ctx.Err(); err != nil {
+		return statemachine.Instance[S]{}, err
+	}
+	if id == "" {
+		return statemachine.Instance[S]{}, statemachine.ErrStoreNotFound
+	}
+	limits := store.persistenceLimits()
+	if len(id) > limits.MaxInstanceIDBytes {
+		return statemachine.Instance[S]{}, fmt.Errorf("%w: persisted instance identity", statemachine.ErrLimitExceeded)
+	}
 	var encodedState string
 	var version string
 	var lockVersion int64
@@ -190,11 +258,14 @@ FROM %s.state_machine_instances WHERE id = $1`, store.schema), id).Scan(&encoded
 		return statemachine.Instance[S]{}, statemachine.ErrStoreNotFound
 	}
 	if err != nil {
-		return statemachine.Instance[S]{}, fmt.Errorf("postgres: load instance: %w", err)
+		return statemachine.Instance[S]{}, wrapError("load instance", err)
+	}
+	if len(encodedState) > limits.MaxEncodedStateBytes || len(version) > limits.MaxIdentifierBytes {
+		return statemachine.Instance[S]{}, fmt.Errorf("%w: persisted instance", statemachine.ErrLimitExceeded)
 	}
 	state, err := store.stateCodec.Decode(encodedState)
 	if err != nil {
-		return statemachine.Instance[S]{}, fmt.Errorf("postgres: decode state: %w", err)
+		return statemachine.Instance[S]{}, wrapError("decode state", err)
 	}
 	return statemachine.Instance[S]{
 		ID: id, State: state, DefinitionVersion: statemachine.Version(version), LockVersion: uint64(lockVersion),
@@ -214,15 +285,27 @@ type resultDocument struct {
 // CompareAndTransition atomically updates state, appends history, and inserts
 // one outbox row per planned effect.
 func (store *Store[S, E]) CompareAndTransition(ctx context.Context, id statemachine.InstanceID, expected uint64, result statemachine.Result[S, E], occurredAt time.Time) (statemachine.Instance[S], statemachine.HistoryEntry[S, E], error) {
+	if err := ctx.Err(); err != nil {
+		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, err
+	}
+	if id == "" {
+		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, statemachine.ErrInvalidStoreInput
+	}
+	if len(id) > store.persistenceLimits().MaxInstanceIDBytes {
+		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, fmt.Errorf("%w: persisted instance identity", statemachine.ErrLimitExceeded)
+	}
+	if err := store.validateResult(result); err != nil {
+		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, err
+	}
 	document, encoded, err := store.encodeResult(result)
 	if err != nil {
 		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, err
 	}
 	tx, err := store.pool.Begin(ctx)
 	if err != nil {
-		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, fmt.Errorf("postgres: begin transition: %w", err)
+		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, wrapError("begin transition", err)
 	}
-	defer func() { _ = tx.Rollback(context.Background()) }()
+	defer rollback(tx)
 
 	var nextLock int64
 	err = tx.QueryRow(ctx, fmt.Sprintf(`
@@ -234,19 +317,22 @@ RETURNING lock_version`, store.schema), document.Next, document.DefinitionVersio
 		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, store.conflictReason(ctx, tx, id)
 	}
 	if err != nil {
-		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, fmt.Errorf("postgres: update instance: %w", err)
+		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, wrapError("update instance", err)
 	}
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
 INSERT INTO %s.state_machine_history
     (instance_id, sequence, result, occurred_at)
 VALUES ($1, $2, $3, $4)`, store.schema), id, nextLock, string(encoded), occurredAt)
 	if err != nil {
-		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, fmt.Errorf("postgres: append history: %w", err)
+		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, wrapError("append history", err)
 	}
 	for index, effect := range result.Effects {
 		outboxID := store.newID()
 		if outboxID == "" {
 			return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, fmt.Errorf("%w: empty outbox ID", statemachine.ErrInvalidStoreInput)
+		}
+		if len(outboxID) > store.persistenceLimits().MaxIdentifierBytes {
+			return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, fmt.Errorf("%w: outbox ID", statemachine.ErrLimitExceeded)
 		}
 		payload := effect.Payload
 		if payload == nil {
@@ -258,11 +344,11 @@ INSERT INTO %s.state_machine_outbox
      available_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $7)`, store.schema), outboxID, id, nextLock, index, effect.Kind, payload, occurredAt)
 		if err != nil {
-			return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, fmt.Errorf("postgres: insert outbox: %w", err)
+			return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, wrapError("insert outbox", err)
 		}
 	}
 	if err := tx.Commit(ctx); err != nil {
-		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, fmt.Errorf("postgres: commit transition: %w", err)
+		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, wrapError("commit transition", err)
 	}
 	instance := statemachine.Instance[S]{
 		ID: id, State: result.Next, DefinitionVersion: result.DefinitionVersion, LockVersion: uint64(nextLock),
@@ -273,13 +359,55 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $7)`, store.schema), outboxID, id, nextLock,
 	return instance, entry, nil
 }
 
+func (store *Store[S, E]) validateResult(result statemachine.Result[S, E]) error {
+	limits := store.persistenceLimits()
+	machine := limits.Machine
+	if result.DefinitionVersion == "" || result.TransitionID == "" {
+		return statemachine.ErrInvalidStoreInput
+	}
+	if len(result.DefinitionVersion) > limits.MaxIdentifierBytes || len(result.TransitionID) > limits.MaxIdentifierBytes {
+		return fmt.Errorf("%w: persisted result identity", statemachine.ErrLimitExceeded)
+	}
+	if len(result.Metadata.CorrelationID) > machine.MaxMetadataBytes ||
+		len(result.Metadata.CausationID) > machine.MaxMetadataBytes-len(result.Metadata.CorrelationID) {
+		return fmt.Errorf("%w: persisted metadata", statemachine.ErrLimitExceeded)
+	}
+	// A transition result can contain exit, transition, and entry phases.
+	phaseCount := len(result.Effects) / 3
+	if len(result.Effects)%3 != 0 {
+		phaseCount++
+	}
+	if phaseCount > machine.MaxEffectsPerPhase {
+		return fmt.Errorf("%w: persisted effects", statemachine.ErrLimitExceeded)
+	}
+	for _, effect := range result.Effects {
+		if effect.Kind == "" {
+			return statemachine.ErrInvalidStoreInput
+		}
+		if len(effect.Kind) > limits.MaxIdentifierBytes {
+			return fmt.Errorf("%w: persisted effect kind", statemachine.ErrLimitExceeded)
+		}
+		if len(effect.Payload) > machine.MaxEffectPayloadBytes {
+			return fmt.Errorf("%w: persisted effect payload", statemachine.ErrLimitExceeded)
+		}
+	}
+	return nil
+}
+
+func (store *Store[S, E]) persistenceLimits() Limits {
+	if store.limits == (Limits{}) {
+		return DefaultLimits()
+	}
+	return store.limits
+}
+
 func (store *Store[S, E]) conflictReason(ctx context.Context, tx transaction, id statemachine.InstanceID) error {
 	var exists bool
 	err := tx.QueryRow(ctx, fmt.Sprintf(`SELECT EXISTS (
     SELECT 1 FROM %s.state_machine_instances WHERE id = $1
 )`, store.schema), id).Scan(&exists)
 	if err != nil {
-		return fmt.Errorf("postgres: inspect conflict: %w", err)
+		return wrapError("inspect conflict", err)
 	}
 	if !exists {
 		return statemachine.ErrStoreNotFound
@@ -289,6 +417,12 @@ func (store *Store[S, E]) conflictReason(ctx context.Context, tx transaction, id
 
 // History returns entries with sequence strictly greater than after.
 func (store *Store[S, E]) History(ctx context.Context, id statemachine.InstanceID, after uint64, limit int) ([]statemachine.HistoryEntry[S, E], error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if len(id) > store.persistenceLimits().MaxInstanceIDBytes {
+		return nil, fmt.Errorf("%w: persisted instance identity", statemachine.ErrLimitExceeded)
+	}
 	if limit < 0 || limit > statemachine.MaxHistoryPageLimit {
 		return nil, statemachine.ErrInvalidStoreInput
 	}
@@ -301,16 +435,20 @@ FROM %s.state_machine_history
 WHERE instance_id = $1 AND sequence > $2
 ORDER BY sequence LIMIT $3`, store.schema), id, after, limit)
 	if err != nil {
-		return nil, fmt.Errorf("postgres: query history: %w", err)
+		return nil, wrapError("query history", err)
 	}
 	defer rows.Close()
 	entries := make([]statemachine.HistoryEntry[S, E], 0)
+	remainingBytes := store.persistenceLimits().MaxHistoryBytes
 	for rows.Next() {
 		var sequence int64
 		var encoded []byte
 		var occurredAt time.Time
 		if err := rows.Scan(&sequence, &encoded, &occurredAt); err != nil {
-			return nil, fmt.Errorf("postgres: scan history: %w", err)
+			return nil, wrapError("scan history", err)
+		}
+		if !consumeSize(&remainingBytes, len(encoded), 1) {
+			return nil, fmt.Errorf("%w: history page bytes", statemachine.ErrLimitExceeded)
 		}
 		result, err := store.decodeResult(encoded)
 		if err != nil {
@@ -321,14 +459,14 @@ ORDER BY sequence LIMIT $3`, store.schema), id, after, limit)
 		})
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("postgres: iterate history: %w", err)
+		return nil, wrapError("iterate history", err)
 	}
 	if len(entries) == 0 {
 		var exists bool
 		if err := store.pool.QueryRow(ctx, fmt.Sprintf(`SELECT EXISTS (
     SELECT 1 FROM %s.state_machine_instances WHERE id = $1
 )`, store.schema), id).Scan(&exists); err != nil {
-			return nil, fmt.Errorf("postgres: inspect history instance: %w", err)
+			return nil, wrapError("inspect history instance", err)
 		}
 		if !exists {
 			return nil, statemachine.ErrStoreNotFound
@@ -339,9 +477,22 @@ ORDER BY sequence LIMIT $3`, store.schema), id, after, limit)
 
 // SaveSnapshot stores a replay boundary after verifying it against history.
 func (store *Store[S, E]) SaveSnapshot(ctx context.Context, snapshot statemachine.Snapshot[S]) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	limits := store.persistenceLimits()
+	if snapshot.InstanceID == "" || snapshot.DefinitionVersion == "" {
+		return statemachine.ErrInvalidStoreInput
+	}
+	if len(snapshot.InstanceID) > limits.MaxInstanceIDBytes || len(snapshot.DefinitionVersion) > limits.MaxIdentifierBytes {
+		return fmt.Errorf("%w: persisted snapshot identity", statemachine.ErrLimitExceeded)
+	}
 	state, err := store.stateCodec.Encode(snapshot.State)
 	if err != nil {
-		return fmt.Errorf("postgres: encode snapshot state: %w", err)
+		return wrapError("encode snapshot state", err)
+	}
+	if len(state) > limits.MaxEncodedStateBytes {
+		return fmt.Errorf("%w: persisted snapshot state", statemachine.ErrLimitExceeded)
 	}
 	var expectedState, expectedVersion string
 	if snapshot.LockVersion == 0 {
@@ -358,7 +509,7 @@ WHERE instance_id = $1 AND sequence = $2`, store.schema), snapshot.InstanceID, s
 		return statemachine.ErrStoreNotFound
 	}
 	if err != nil {
-		return fmt.Errorf("postgres: validate snapshot: %w", err)
+		return wrapError("validate snapshot", err)
 	}
 	if state != expectedState || string(snapshot.DefinitionVersion) != expectedVersion {
 		return statemachine.ErrInvalidStoreInput
@@ -375,7 +526,7 @@ ON CONFLICT (instance_id) DO UPDATE SET
 WHERE %s.state_machine_snapshots.lock_version <= EXCLUDED.lock_version`, store.schema, store.schema),
 		snapshot.InstanceID, state, snapshot.DefinitionVersion, snapshot.LockVersion, snapshot.CreatedAt)
 	if err != nil {
-		return fmt.Errorf("postgres: save snapshot: %w", err)
+		return wrapError("save snapshot", err)
 	}
 	if tag.RowsAffected() == 0 {
 		return statemachine.ErrStoreConflict
@@ -385,6 +536,13 @@ WHERE %s.state_machine_snapshots.lock_version <= EXCLUDED.lock_version`, store.s
 
 // LoadSnapshot returns the latest saved replay boundary.
 func (store *Store[S, E]) LoadSnapshot(ctx context.Context, id statemachine.InstanceID) (statemachine.Snapshot[S], error) {
+	if err := ctx.Err(); err != nil {
+		return statemachine.Snapshot[S]{}, err
+	}
+	limits := store.persistenceLimits()
+	if len(id) > limits.MaxInstanceIDBytes {
+		return statemachine.Snapshot[S]{}, fmt.Errorf("%w: persisted instance identity", statemachine.ErrLimitExceeded)
+	}
 	var encodedState, version string
 	var lockVersion int64
 	var createdAt time.Time
@@ -395,11 +553,14 @@ FROM %s.state_machine_snapshots WHERE instance_id = $1`, store.schema), id).Scan
 		return statemachine.Snapshot[S]{}, statemachine.ErrStoreNotFound
 	}
 	if err != nil {
-		return statemachine.Snapshot[S]{}, fmt.Errorf("postgres: load snapshot: %w", err)
+		return statemachine.Snapshot[S]{}, wrapError("load snapshot", err)
+	}
+	if len(encodedState) > limits.MaxEncodedStateBytes || len(version) > limits.MaxIdentifierBytes {
+		return statemachine.Snapshot[S]{}, fmt.Errorf("%w: persisted snapshot", statemachine.ErrLimitExceeded)
 	}
 	state, err := store.stateCodec.Decode(encodedState)
 	if err != nil {
-		return statemachine.Snapshot[S]{}, fmt.Errorf("postgres: decode snapshot state: %w", err)
+		return statemachine.Snapshot[S]{}, wrapError("decode snapshot state", err)
 	}
 	return statemachine.Snapshot[S]{
 		InstanceID: id, State: state, DefinitionVersion: statemachine.Version(version),
@@ -408,60 +569,127 @@ FROM %s.state_machine_snapshots WHERE instance_id = $1`, store.schema), id).Scan
 }
 
 func (store *Store[S, E]) encodeResult(result statemachine.Result[S, E]) (resultDocument, []byte, error) {
+	limits := store.persistenceLimits()
 	previous, err := store.stateCodec.Encode(result.Previous)
 	if err != nil {
-		return resultDocument{}, nil, fmt.Errorf("postgres: encode previous state: %w", err)
+		return resultDocument{}, nil, wrapError("encode previous state", err)
 	}
 	next, err := store.stateCodec.Encode(result.Next)
 	if err != nil {
-		return resultDocument{}, nil, fmt.Errorf("postgres: encode next state: %w", err)
+		return resultDocument{}, nil, wrapError("encode next state", err)
 	}
 	event, err := store.eventCodec.Encode(result.Event)
 	if err != nil {
-		return resultDocument{}, nil, fmt.Errorf("postgres: encode event: %w", err)
+		return resultDocument{}, nil, wrapError("encode event", err)
 	}
 	if result.DefinitionVersion == "" {
 		return resultDocument{}, nil, statemachine.ErrInvalidStoreInput
 	}
+	if len(previous) > limits.MaxEncodedStateBytes || len(next) > limits.MaxEncodedStateBytes {
+		return resultDocument{}, nil, fmt.Errorf("%w: persisted state", statemachine.ErrLimitExceeded)
+	}
+	if len(event) > limits.MaxEncodedEventBytes {
+		return resultDocument{}, nil, fmt.Errorf("%w: persisted event", statemachine.ErrLimitExceeded)
+	}
 	document := resultDocument{
 		DefinitionVersion: string(result.DefinitionVersion), Previous: previous,
 		Next: next, Event: event, TransitionID: string(result.TransitionID),
-		Metadata: result.Metadata, Effects: cloneEffects(result.Effects),
+		Metadata: result.Metadata, Effects: result.Effects,
 	}
+	if !resultDocumentFits(document, limits.MaxResultBytes) {
+		return resultDocument{}, nil, fmt.Errorf("%w: encoded result", statemachine.ErrLimitExceeded)
+	}
+	document.Effects = cloneEffects(result.Effects)
 	marshal := store.marshal
 	if marshal == nil {
 		marshal = json.Marshal
 	}
 	encoded, err := marshal(document)
 	if err != nil {
-		return resultDocument{}, nil, fmt.Errorf("postgres: encode result: %w", err)
+		return resultDocument{}, nil, wrapError("encode result", err)
+	}
+	if len(encoded) > limits.MaxResultBytes {
+		return resultDocument{}, nil, fmt.Errorf("%w: encoded result", statemachine.ErrLimitExceeded)
 	}
 	return document, encoded, nil
 }
 
 func (store *Store[S, E]) decodeResult(encoded []byte) (statemachine.Result[S, E], error) {
+	limits := store.persistenceLimits()
+	if len(encoded) > limits.MaxResultBytes {
+		return statemachine.Result[S, E]{}, fmt.Errorf("%w: encoded result", statemachine.ErrLimitExceeded)
+	}
 	var document resultDocument
 	if err := json.Unmarshal(encoded, &document); err != nil {
-		return statemachine.Result[S, E]{}, fmt.Errorf("postgres: decode result: %w", err)
+		return statemachine.Result[S, E]{}, wrapError("decode result", err)
+	}
+	if len(document.Previous) > limits.MaxEncodedStateBytes || len(document.Next) > limits.MaxEncodedStateBytes ||
+		len(document.Event) > limits.MaxEncodedEventBytes || len(document.DefinitionVersion) > limits.MaxIdentifierBytes ||
+		len(document.TransitionID) > limits.MaxIdentifierBytes {
+		return statemachine.Result[S, E]{}, fmt.Errorf("%w: decoded result", statemachine.ErrLimitExceeded)
 	}
 	previous, err := store.stateCodec.Decode(document.Previous)
 	if err != nil {
-		return statemachine.Result[S, E]{}, fmt.Errorf("postgres: decode previous state: %w", err)
+		return statemachine.Result[S, E]{}, wrapError("decode previous state", err)
 	}
 	next, err := store.stateCodec.Decode(document.Next)
 	if err != nil {
-		return statemachine.Result[S, E]{}, fmt.Errorf("postgres: decode next state: %w", err)
+		return statemachine.Result[S, E]{}, wrapError("decode next state", err)
 	}
 	event, err := store.eventCodec.Decode(document.Event)
 	if err != nil {
-		return statemachine.Result[S, E]{}, fmt.Errorf("postgres: decode event: %w", err)
+		return statemachine.Result[S, E]{}, wrapError("decode event", err)
 	}
-	return statemachine.Result[S, E]{
+	result := statemachine.Result[S, E]{
 		DefinitionVersion: statemachine.Version(document.DefinitionVersion),
 		Previous:          previous, Next: next, Event: event,
 		TransitionID: statemachine.TransitionID(document.TransitionID),
 		Metadata:     document.Metadata, Effects: cloneEffects(document.Effects),
-	}, nil
+	}
+	if err := store.validateResult(result); err != nil {
+		return statemachine.Result[S, E]{}, err
+	}
+	return result, nil
+}
+
+func resultDocumentFits(document resultDocument, maximum int) bool {
+	remaining := maximum
+	// JSON field names, separators, braces, and the empty effect array fit well
+	// within this fixed allowance. Variable data uses worst-case JSON escaping.
+	if !consumeSize(&remaining, 256, 1) ||
+		!consumeSize(&remaining, len(document.DefinitionVersion), 6) ||
+		!consumeSize(&remaining, len(document.Previous), 6) ||
+		!consumeSize(&remaining, len(document.Next), 6) ||
+		!consumeSize(&remaining, len(document.Event), 6) ||
+		!consumeSize(&remaining, len(document.TransitionID), 6) ||
+		!consumeSize(&remaining, len(document.Metadata.CorrelationID), 6) ||
+		!consumeSize(&remaining, len(document.Metadata.CausationID), 6) {
+		return false
+	}
+	for _, effect := range document.Effects {
+		if !consumeSize(&remaining, 48, 1) ||
+			!consumeSize(&remaining, len(effect.Kind), 6) ||
+			!consumeBase64Size(&remaining, len(effect.Payload)) {
+			return false
+		}
+	}
+	return true
+}
+
+func consumeSize(remaining *int, count int, multiplier int) bool {
+	if count < 0 || multiplier <= 0 || count > *remaining/multiplier {
+		return false
+	}
+	*remaining -= count * multiplier
+	return true
+}
+
+func consumeBase64Size(remaining *int, bytes int) bool {
+	groups := bytes / 3
+	if bytes%3 != 0 {
+		groups++
+	}
+	return consumeSize(remaining, groups, 4)
 }
 
 func cloneResult[S statemachine.State, E statemachine.Event](result statemachine.Result[S, E]) statemachine.Result[S, E] {

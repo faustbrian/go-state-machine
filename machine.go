@@ -141,7 +141,7 @@ type GuardRejectedError struct {
 }
 
 func (err *GuardRejectedError) Error() string {
-	return fmt.Sprintf("%s: %s: %s", ErrGuardRejected, err.Rejection.Code, err.Rejection.Message)
+	return ErrGuardRejected.Error()
 }
 
 // Unwrap supports errors.Is(err, ErrGuardRejected).
@@ -155,7 +155,7 @@ type GuardPanicError struct {
 }
 
 func (err *GuardPanicError) Error() string {
-	return fmt.Sprintf("statemachine: guard panicked in transition %s", err.TransitionID)
+	return ErrGuardPanic.Error()
 }
 
 // Unwrap supports errors.Is(err, ErrGuardPanic).
@@ -171,7 +171,7 @@ type GuardFailedError struct {
 }
 
 func (err *GuardFailedError) Error() string {
-	return fmt.Sprintf("statemachine: guard failed in transition %s", err.TransitionID)
+	return ErrGuardFailed.Error()
 }
 
 func (err *GuardFailedError) Unwrap() []error {
@@ -186,6 +186,13 @@ func Compile[S State, E Event, C any](definition Definition[S, E, C]) (*Machine[
 // CompileWithLimits validates and copies a definition using explicit resource
 // bounds.
 func CompileWithLimits[S State, E Event, C any](definition Definition[S, E, C], limits Limits) (*Machine[S, E, C], error) {
+	defaults := DefaultLimits()
+	if limits.MaxCompiledEffectPayloadBytes == 0 {
+		limits.MaxCompiledEffectPayloadBytes = defaults.MaxCompiledEffectPayloadBytes
+	}
+	if limits.MaxCompiledElements == 0 {
+		limits.MaxCompiledElements = defaults.MaxCompiledElements
+	}
 	if !limits.valid() {
 		return nil, &DiagnosticsError{Diagnostics: []Diagnostic{{
 			Code: DiagnosticLimitExceeded, Message: "all compile limits must be positive",
@@ -195,6 +202,63 @@ func CompileWithLimits[S State, E Event, C any](definition Definition[S, E, C], 
 		return nil, &DiagnosticsError{Diagnostics: []Diagnostic{{
 			Code: DiagnosticLimitExceeded, Message: "definition exceeds state or transition limit",
 		}}}
+	}
+	remainingElements := limits.MaxCompiledElements
+	remainingPayloadBytes := limits.MaxCompiledEffectPayloadBytes
+	reserve := func(elements, payloadBytes int) bool {
+		if elements > remainingElements || payloadBytes > remainingPayloadBytes {
+			return false
+		}
+		remainingElements -= elements
+		remainingPayloadBytes -= payloadBytes
+		return true
+	}
+	aggregateError := func() error {
+		return &DiagnosticsError{Diagnostics: []Diagnostic{{
+			Code: DiagnosticLimitExceeded, Message: "definition exceeds aggregate compile limits",
+		}}}
+	}
+	if !reserve(len(definition.States), 0) || !reserve(len(definition.Transitions), 0) {
+		return nil, aggregateError()
+	}
+	for _, state := range definition.States {
+		if !reserve(len(state.Entry), 0) || !reserve(len(state.Exit), 0) {
+			return nil, aggregateError()
+		}
+		if diagnostics := limitEffects(state.Entry, "entry", limits, ""); len(diagnostics) != 0 {
+			return nil, &DiagnosticsError{Diagnostics: diagnostics}
+		}
+		if diagnostics := limitEffects(state.Exit, "exit", limits, ""); len(diagnostics) != 0 {
+			return nil, &DiagnosticsError{Diagnostics: diagnostics}
+		}
+		for _, effects := range [][]Effect{state.Entry, state.Exit} {
+			for _, effect := range effects {
+				if !reserve(0, len(effect.Payload)) {
+					return nil, aggregateError()
+				}
+			}
+		}
+	}
+	for _, transition := range definition.Transitions {
+		if len(transition.Sources) > limits.MaxSourcesPerTransition ||
+			len(transition.Guards) > limits.MaxGuardsPerTransition ||
+			len(transition.CheckedGuards) > limits.MaxGuardsPerTransition-len(transition.Guards) {
+			return nil, &DiagnosticsError{Diagnostics: []Diagnostic{{
+				Code: DiagnosticLimitExceeded, Message: "transition exceeds source or guard limit", TransitionID: transition.ID,
+			}}}
+		}
+		if !reserve(len(transition.Sources), 0) || !reserve(len(transition.Guards), 0) ||
+			!reserve(len(transition.CheckedGuards), 0) || !reserve(len(transition.Effects), 0) {
+			return nil, aggregateError()
+		}
+		if diagnostics := limitEffects(transition.Effects, "transition", limits, transition.ID); len(diagnostics) != 0 {
+			return nil, &DiagnosticsError{Diagnostics: diagnostics}
+		}
+		for _, effect := range transition.Effects {
+			if !reserve(0, len(effect.Payload)) {
+				return nil, aggregateError()
+			}
+		}
 	}
 	machine := &Machine[S, E, C]{
 		version:      definition.Version,
@@ -223,8 +287,6 @@ func CompileWithLimits[S State, E Event, C any](definition Definition[S, E, C], 
 		}
 		state.Entry = cloneEffects(state.Entry)
 		state.Exit = cloneEffects(state.Exit)
-		diagnostics = append(diagnostics, limitEffects(state.Entry, "entry", limits, "")...)
-		diagnostics = append(diagnostics, limitEffects(state.Exit, "exit", limits, "")...)
 		diagnostics = append(diagnostics, validateEffects(state.Entry, "entry")...)
 		diagnostics = append(diagnostics, validateEffects(state.Exit, "exit")...)
 		machine.states[state.State] = state
@@ -254,13 +316,6 @@ func CompileWithLimits[S State, E Event, C any](definition Definition[S, E, C], 
 		}
 		transitionIDs[transition.ID] = struct{}{}
 		diagnostics = append(diagnostics, diagnosticsForEffects(transition.Effects, transition.ID)...)
-		if len(transition.Sources) > limits.MaxSourcesPerTransition ||
-			len(transition.Guards)+len(transition.CheckedGuards) > limits.MaxGuardsPerTransition {
-			diagnostics = append(diagnostics, Diagnostic{
-				Code: DiagnosticLimitExceeded, Message: "transition exceeds source or guard limit", TransitionID: transition.ID,
-			})
-		}
-		diagnostics = append(diagnostics, limitEffects(transition.Effects, "transition", limits, transition.ID)...)
 		if _, exists := machine.states[transition.To]; !exists {
 			diagnostics = append(diagnostics, Diagnostic{
 				Code: DiagnosticUnknownState, Message: fmt.Sprintf("destination state %v is not defined", transition.To), TransitionID: transition.ID,
@@ -502,6 +557,7 @@ func limitEffects(effects []Effect, phase string, limits Limits, id TransitionID
 		diagnostics = append(diagnostics, Diagnostic{
 			Code: DiagnosticLimitExceeded, Message: phase + " effects exceed count limit", TransitionID: id,
 		})
+		return diagnostics
 	}
 	for _, effect := range effects {
 		if len(effect.Payload) > limits.MaxEffectPayloadBytes {

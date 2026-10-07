@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
-	"github.com/faustbrian/go-state-machine/runner"
-	"github.com/faustbrian/go-state-machine/statemachinetest"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
+	"github.com/faustbrian/go-state-machine/v2/runner"
+	"github.com/faustbrian/go-state-machine/v2/statemachinetest"
 )
 
 type handlerFunc func(context.Context, statemachine.Effect) error
@@ -89,7 +89,7 @@ func TestExecuteContainsHandlerPanic(t *testing.T) {
 	if !errors.Is(err, runner.ErrHandlerPanic) {
 		t.Fatalf("error = %v, want ErrHandlerPanic", err)
 	}
-	if err.Error() != "runner: effect 0 (panic) ended panicked: runner: effect handler panicked" {
+	if err.Error() != "runner: effect 0 failed" {
 		t.Fatalf("error disclosed panic value: %q", err)
 	}
 }

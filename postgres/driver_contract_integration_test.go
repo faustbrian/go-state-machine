@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
-	"github.com/faustbrian/go-state-machine/outbox"
-	storepostgres "github.com/faustbrian/go-state-machine/postgres"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
+	"github.com/faustbrian/go-state-machine/v2/outbox"
+	storepostgres "github.com/faustbrian/go-state-machine/v2/postgres"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )

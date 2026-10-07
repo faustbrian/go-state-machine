@@ -5,14 +5,14 @@
   "modules": [
     {
       "directory": ".",
-      "module_path": "github.com/faustbrian/go-state-machine",
+      "module_path": "github.com/faustbrian/go-state-machine/v2",
       "go_version": "1.27.0",
       "packages": [
         {
           "module_directory": ".",
           "directory": ".",
           "name": "statemachine",
-          "import_path": "github.com/faustbrian/go-state-machine",
+          "import_path": "github.com/faustbrian/go-state-machine/v2",
           "kind": "public",
           "production": true,
           "executable": true,
@@ -24,7 +24,7 @@
           "module_directory": ".",
           "directory": "diagram",
           "name": "diagram",
-          "import_path": "github.com/faustbrian/go-state-machine/diagram",
+          "import_path": "github.com/faustbrian/go-state-machine/v2/diagram",
           "kind": "public",
           "production": true,
           "executable": true,
@@ -36,7 +36,7 @@
           "module_directory": ".",
           "directory": "memory",
           "name": "memory",
-          "import_path": "github.com/faustbrian/go-state-machine/memory",
+          "import_path": "github.com/faustbrian/go-state-machine/v2/memory",
           "kind": "public",
           "production": true,
           "executable": true,
@@ -48,7 +48,7 @@
           "module_directory": ".",
           "directory": "outbox",
           "name": "outbox",
-          "import_path": "github.com/faustbrian/go-state-machine/outbox",
+          "import_path": "github.com/faustbrian/go-state-machine/v2/outbox",
           "kind": "public",
           "production": true,
           "executable": true,
@@ -60,7 +60,7 @@
           "module_directory": ".",
           "directory": "postgres",
           "name": "postgres",
-          "import_path": "github.com/faustbrian/go-state-machine/postgres",
+          "import_path": "github.com/faustbrian/go-state-machine/v2/postgres",
           "kind": "public",
           "production": true,
           "executable": true,
@@ -72,7 +72,7 @@
           "module_directory": ".",
           "directory": "runner",
           "name": "runner",
-          "import_path": "github.com/faustbrian/go-state-machine/runner",
+          "import_path": "github.com/faustbrian/go-state-machine/v2/runner",
           "kind": "public",
           "production": true,
           "executable": true,
@@ -84,7 +84,7 @@
           "module_directory": ".",
           "directory": "statemachinetest",
           "name": "statemachinetest",
-          "import_path": "github.com/faustbrian/go-state-machine/statemachinetest",
+          "import_path": "github.com/faustbrian/go-state-machine/v2/statemachinetest",
           "kind": "test support",
           "production": false,
           "executable": true,
@@ -94,14 +94,14 @@
         }
       ],
       "purpose": "`state-machine` is a typed, deterministic state-machine library for Go. Compiled definitions select transitions and plan effects without performing I/O. Optional packages execute effects, persist state and history, publish a durable outbox, and export diagrams.",
-      "lifecycle": "stable",
+      "lifecycle": "planned",
       "kind": "public library",
-      "releasable": true,
+      "releasable": false,
       "family": "domain-utilities",
       "family_label": "Domain Utilities",
       "family_description": "Domain-specific immutable values, algorithms, parsers, proofs, and calculations.",
       "family_order": 8,
-      "version": "1.0.2",
+      "version": "2.0.0",
       "tag_prefix": "v",
       "owned_dependencies": [],
       "reverse_owned_dependencies": [],
@@ -213,19 +213,19 @@
         ],
         "public_package_identifier": "statemachine",
         "primary_entry_packages": [
-          "github.com/faustbrian/go-state-machine"
+          "github.com/faustbrian/go-state-machine/v2"
         ],
         "package_selection": {
-          "github.com/faustbrian/go-state-machine": "Use to compile typed finite-state definitions into immutable machines, select transitions, plan inert effects, replay inputs, and validate or evolve history.",
-          "github.com/faustbrian/go-state-machine/diagram": "Use to render a compiled machine graph as bounded Mermaid or Graphviz output.",
-          "github.com/faustbrian/go-state-machine/memory": "Use for concurrency-safe ephemeral state-machine persistence in tests, development, or non-durable processes.",
-          "github.com/faustbrian/go-state-machine/outbox": "Use to relay persisted state-machine effects with explicit leases, failure classification, and at-least-once delivery.",
-          "github.com/faustbrian/go-state-machine/postgres": "Use for durable PostgreSQL state, history, snapshots, optimistic transitions, and atomic outbox insertion.",
-          "github.com/faustbrian/go-state-machine/runner": "Use to execute an inert effect plan explicitly with ordered handling, cancellation, panic containment, and outcome recording.",
-          "github.com/faustbrian/go-state-machine/statemachinetest": "Use to verify custom Store and effect-runner implementations against reusable conformance contracts."
+          "github.com/faustbrian/go-state-machine/v2": "Use to compile typed finite-state definitions into immutable machines, select transitions, plan inert effects, replay inputs, and validate or evolve history.",
+          "github.com/faustbrian/go-state-machine/v2/diagram": "Use to render a compiled machine graph as bounded Mermaid or Graphviz output.",
+          "github.com/faustbrian/go-state-machine/v2/memory": "Use for concurrency-safe ephemeral state-machine persistence in tests, development, or non-durable processes.",
+          "github.com/faustbrian/go-state-machine/v2/outbox": "Use to relay persisted state-machine effects with explicit leases, failure classification, and at-least-once delivery.",
+          "github.com/faustbrian/go-state-machine/v2/postgres": "Use for durable PostgreSQL state, history, snapshots, optimistic transitions, and atomic outbox insertion.",
+          "github.com/faustbrian/go-state-machine/v2/runner": "Use to execute an inert effect plan explicitly with ordered handling, cancellation, panic containment, and outcome recording.",
+          "github.com/faustbrian/go-state-machine/v2/statemachinetest": "Use to verify custom Store and effect-runner implementations against reusable conformance contracts."
         },
-        "lifecycle_status": "active",
-        "maturity": "stable",
+        "lifecycle_status": "planned",
+        "maturity": "preview",
         "construction_styles": [
           "builder-compile",
           "new-options",
@@ -245,11 +245,11 @@
         },
         "optional_owned_dependencies": [],
         "adapters": [
-          "github.com/faustbrian/go-state-machine/diagram",
-          "github.com/faustbrian/go-state-machine/memory",
-          "github.com/faustbrian/go-state-machine/outbox",
-          "github.com/faustbrian/go-state-machine/postgres",
-          "github.com/faustbrian/go-state-machine/runner"
+          "github.com/faustbrian/go-state-machine/v2/diagram",
+          "github.com/faustbrian/go-state-machine/v2/memory",
+          "github.com/faustbrian/go-state-machine/v2/outbox",
+          "github.com/faustbrian/go-state-machine/v2/postgres",
+          "github.com/faustbrian/go-state-machine/v2/runner"
         ],
         "companions": [
           "github.com/faustbrian/go-temporal",
@@ -290,7 +290,7 @@
         "delivery": {
           "implementation": "in-progress",
           "hardening": "in-progress",
-          "release": "in-progress"
+          "release": "blocked"
         }
       },
       "gates": {

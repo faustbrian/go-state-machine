@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
 type internalHandler func(context.Context, statemachine.Effect) error
@@ -38,7 +38,7 @@ func TestRunnerRemainingConstructionAndFailurePaths(t *testing.T) {
 	records, err := executor.Execute(context.Background(), []statemachine.Effect{{Kind: "bad"}})
 	var effectErr *EffectError
 	if !errors.As(err, &effectErr) || !errors.Is(err, wantErr) || effectErr.Outcome != OutcomePermanent ||
-		!strings.Contains(effectErr.Error(), "bad") || len(records) != 1 {
+		effectErr.Kind != "bad" || len(records) != 1 {
 		t.Fatalf("records = %#v, error = %v", records, err)
 	}
 
@@ -57,15 +57,25 @@ func TestRunnerRecordsCancellationBetweenEffects(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	called := 0
+	called, clocked, recorded := 0, 0, 0
 	executor, _ := New(internalHandler(func(context.Context, statemachine.Effect) error {
 		called++
 		cancel()
 		return nil
-	}), Options{Clock: func() time.Time { return time.Unix(1, 0) }})
+	}), Options{
+		Clock: func() time.Time {
+			clocked++
+			return time.Unix(1, 0)
+		},
+		Recorder: internalRecorder(func(context.Context, Record) error {
+			recorded++
+			return nil
+		}),
+	})
 	records, err := executor.Execute(ctx, []statemachine.Effect{{Kind: "first"}, {Kind: "second"}})
-	if !errors.Is(err, context.Canceled) || called != 1 || len(records) != 2 || records[1].Outcome != OutcomeCanceled {
-		t.Fatalf("called = %d, records = %#v, error = %v", called, records, err)
+	if !errors.Is(err, context.Canceled) || called != 1 || len(records) != 1 ||
+		records[0].Outcome != OutcomeSucceeded || clocked != 2 || recorded != 1 {
+		t.Fatalf("called = %d, clocked = %d, recorded = %d, records = %#v, error = %v", called, clocked, recorded, records, err)
 	}
 }
 

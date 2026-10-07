@@ -3,11 +3,10 @@ package outbox
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 	"time"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
 type internalStore struct {
@@ -86,7 +85,7 @@ func TestRelayRemainingConstructionAndOperationErrors(t *testing.T) {
 	relay, _ := NewRelay(relayOptions(&internalStore{claimErr: wantErr}, internalPublisher(func(context.Context, Message) error { return nil })))
 	_, err := relay.RunOnce(context.Background(), ClaimRequest{})
 	var operationErr *OperationError
-	if !errors.As(err, &operationErr) || !errors.Is(err, wantErr) || !strings.Contains(err.Error(), "claim") {
+	if !errors.As(err, &operationErr) || !errors.Is(err, wantErr) || operationErr.Operation != "claim" {
 		t.Fatalf("claim error = %v", err)
 	}
 

@@ -3,7 +3,6 @@ package statemachine
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 )
 
@@ -50,7 +49,7 @@ func TestEvolutionReportsHookFailuresAndCancellation(t *testing.T) {
 		InstanceID: "one", State: "a", DefinitionVersion: "v1",
 	}, nil, "v2")
 	var migrationErr *MigrationError
-	if !errors.As(err, &migrationErr) || !errors.Is(err, wantErr) || !strings.Contains(err.Error(), "state") {
+	if !errors.As(err, &migrationErr) || !errors.Is(err, wantErr) || migrationErr.Field != "state" {
 		t.Fatalf("state migration error = %v", err)
 	}
 
