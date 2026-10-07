@@ -5,7 +5,7 @@
 [![Coverage](https://img.shields.io/badge/coverage-risk_based_evidence-blue)](CONTRIBUTING.md#verification)
 [![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
-[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-state-machine.svg)](https://pkg.go.dev/github.com/faustbrian/go-state-machine)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-state-machine/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-state-machine/v2)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-state-machine?sort=semver)](https://github.com/faustbrian/go-state-machine/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -18,18 +18,18 @@ durable outbox, and export diagrams.
 It is intentionally not a workflow engine, scheduler, rule engine, queue, saga
 framework, or dependency-injection container.
 
-The latest published line is stable v1 and requires Go 1.27.0 or newer.
-This checkout contains the unpublished
-`github.com/faustbrian/go-state-machine/v2` release candidate. Publication
-requires its release gates; public consumer verification and affected owned
-adoption follow publication before package security closure.
-Existing consumers must remain on released v1 and must not use a local
-`replace` directive to consume this checkout as v1.
+The latest published line is stable v2 and requires Go 1.27.0 or newer.
+Release v2.0.0 is available as `github.com/faustbrian/go-state-machine/v2`.
+Migrate v1 imports to `/v2` and review the bounded-work and diagnostic changes
+in [the release disposition](docs/security/release-disposition.md). Public
+release availability does not establish an application's migration or the
+remaining ecosystem adoption. Do not consume this checkout as v1 with a local
+`replace` directive.
 
 ## Install
 
 ```sh
-go get github.com/faustbrian/go-state-machine@v1
+go get github.com/faustbrian/go-state-machine/v2@v2.0.0
 ```
 
 ## Choose the right package
@@ -50,7 +50,7 @@ import (
 	"context"
 	"fmt"
 
-	statemachine "github.com/faustbrian/go-state-machine"
+	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
 type State string

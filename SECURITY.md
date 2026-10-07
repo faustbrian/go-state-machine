@@ -3,9 +3,9 @@
 Security fixes are provided for the latest released major version and the Go
 versions supported by that release.
 
-The default branch currently prepares an unpublished v2 release candidate.
-Released v1 remains the supported production line until v2 is published.
-The candidate's security controls do not change already published v1 artifacts.
+The latest released major version is v2, published as v2.0.0 on 2026-10-07.
+Its security controls do not change already published v1 artifacts. Consumers
+must migrate imports and verify their own application contracts to adopt v2.
 
 Do not open a public issue for a suspected vulnerability. Use the repository's
 [private security advisory](https://github.com/faustbrian/go-state-machine/security/advisories/new)
@@ -22,7 +22,7 @@ when sufficient private evidence exists to reproduce or confidently bound the
 report, and the maintainer communicates evidence gaps or target changes.
 
 The [published-source disposition](docs/security/release-disposition.md)
-separates observed v1 behavior, prepared v2 controls and unverified deployment
+separates observed v1 behavior, published v2 controls and unverified deployment
 impact. A dated changelog or passing qualification does not itself establish
 publication or a fixed version available to consumers.
 
