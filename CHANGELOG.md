@@ -5,6 +5,14 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-07
+
+### Changed
+
+- Refresh the shared CI workflow while retaining the configured verification
+  CLI and PostgreSQL integration checks. State-machine APIs and runtime
+  behavior are unchanged.
+
 ## [1.0.1] - 2026-10-06
 
 ### Changed
