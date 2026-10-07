@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "packages": [
+    {
+      "module_directory": ".",
+      "package_directory": ".",
+      "source_digest": "6c51f661a6830011a11d2fa195f7f219160947900d5442933fe0093e68aad641",
+      "gremlins_version": "v0.6.0",
+      "gremlins_verifier_sha256": "390cf4085a0063fe5dcaa29ce942ea4cb8c7876347da90376b65dc8c5c811104",
+      "mutations": [
+        {
+          "file_name": "limits.go",
+          "type": "CONDITIONALS_BOUNDARY",
+          "line": 43,
+          "column": 40,
+          "contract_domain": "Aggregate payload limit validation reached through public CompileWithLimits after zero-default normalization; identical admission, errors and compiled behavior",
+          "reason": "Independent reviewer /root/state_machine_signed_row_final_review ACCEPT this coordinate; date 2026-10-07; expiry 2026-11-06 or any bound source/verifier, normalization order or valid caller change. Gremlins changes MaxCompiledEffectPayloadBytes>0 to >=0. CompileWithLimits replaces zero with the positive default before the sole production Limits.valid call. Negative values fail both predicates; positive values pass both. Zero is unreachable at this guard through the public producer. Other explicit limits, resource charges and production guards remain unchanged. Private direct valid calls with zero can distinguish the mutation and are outside this producer domain. Native37601795652 remains FAILED with this coordinate LIVED; no native counters or other survivors are accepted."
+        },
+        {
+          "file_name": "limits.go",
+          "type": "CONDITIONALS_BOUNDARY",
+          "line": 43,
+          "column": 74,
+          "contract_domain": "Aggregate element limit validation reached through public CompileWithLimits after zero-default normalization; identical admission, errors and compiled behavior",
+          "reason": "Independent reviewer /root/state_machine_signed_row_final_review ACCEPT this coordinate; date 2026-10-07; expiry 2026-11-06 or any bound source/verifier, normalization order or valid caller change. Gremlins changes MaxCompiledElements>0 to >=0. CompileWithLimits replaces zero with the positive default before the sole production Limits.valid call. Negative values fail both predicates; positive values pass both. Zero is unreachable at this guard through the public producer. Other explicit limits, resource charges and production guards remain unchanged. Private direct valid calls with zero can distinguish the mutation and are outside this producer domain. Native37601795652 remains FAILED with this coordinate LIVED; no native counters or other survivors are accepted."
+        }
+      ]
+    }
+  ]
+}
