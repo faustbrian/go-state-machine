@@ -1,9 +1,13 @@
 # Releasing
 
-The active root source is planned v2 and release-blocked. Do not publish a v2
-tag until the repository release gates pass, the v2 API and security behavior
-are approved, and every owned consumer has been verified against a publicly
-resolvable v2 candidate without local `replace` directives.
+The active root source is an unpublished v2 release candidate. Do not publish
+a v2 tag until the repository release gates pass, the v2 API and security
+behavior are approved, and release authority covers the selected source.
+
+Publication and ecosystem adoption are separate boundaries. After publication,
+verify the actual public v2 module without local `replace` directives and
+complete affected owned-consumer adoption before claiming package security
+closure. A publicly resolvable v2 is not a precondition for its first publication.
 
 Released v1 remains the production line. Its API baseline must stay unchanged,
 and README installation, release badges, general package reference, and owned

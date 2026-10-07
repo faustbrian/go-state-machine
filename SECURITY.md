@@ -3,9 +3,9 @@
 Security fixes are provided for the latest released major version and the Go
 versions supported by that release.
 
-The default branch currently prepares an unpublished, non-releasable v2 root
-module. Released v1 remains the supported production line until the v2
-publication gates pass.
+The default branch currently prepares an unpublished v2 release candidate.
+Released v1 remains the supported production line until v2 is published.
+The candidate's security controls do not change already published v1 artifacts.
 
 Do not open a public issue for a suspected vulnerability. Use the repository's
 [private security advisory](https://github.com/faustbrian/go-state-machine/security/advisories/new)

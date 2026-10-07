@@ -94,9 +94,9 @@
         }
       ],
       "purpose": "`state-machine` is a typed, deterministic state-machine library for Go. Compiled definitions select transitions and plan effects without performing I/O. Optional packages execute effects, persist state and history, publish a durable outbox, and export diagrams.",
-      "lifecycle": "planned",
+      "lifecycle": "stable",
       "kind": "public library",
-      "releasable": false,
+      "releasable": true,
       "family": "domain-utilities",
       "family_label": "Domain Utilities",
       "family_description": "Domain-specific immutable values, algorithms, parsers, proofs, and calculations.",

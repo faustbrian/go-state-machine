@@ -19,9 +19,10 @@ It is intentionally not a workflow engine, scheduler, rule engine, queue, saga
 framework, or dependency-injection container.
 
 The latest published line is stable v1 and requires Go 1.27.0 or newer.
-This checkout contains the planned, unpublished
-`github.com/faustbrian/go-state-machine/v2` source. V2 is preview-only and
-non-releasable until its release and owned-consumer migration gates pass.
+This checkout contains the unpublished
+`github.com/faustbrian/go-state-machine/v2` release candidate. Publication
+requires its release gates; public consumer verification and affected owned
+adoption follow publication before package security closure.
 Existing consumers must remain on released v1 and must not use a local
 `replace` directive to consume this checkout as v1.
 

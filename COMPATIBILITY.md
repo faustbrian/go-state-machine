@@ -2,18 +2,18 @@
 
 Root releases follow semantic versioning and use `v<version>` tags. Released
 v1 remains available at `github.com/faustbrian/go-state-machine`. The current
-source tree prepares the planned `github.com/faustbrian/go-state-machine/v2`
+source tree prepares the `github.com/faustbrian/go-state-machine/v2`
 module because persistence bounds and safe default error strings change
 previously accepted and observable behavior.
 
-Version 2 is preview, unpublished, and non-releasable. Publication is blocked
-until all release gates pass, the v2 API baseline is reviewed, owned consumers
-are migrated and verified against a published v2 candidate without local
-`replace` directives, and explicit release authority is provided. Until then,
-applications must install and import released v1.
+Version 2 is an unpublished release candidate. Publication requires the
+repository release gates, reviewed v2 API and security behavior, and explicit
+release authority. Actual public-v2 consumer verification and affected owned
+adoption follow publication and remain required for package security closure.
+Until publication, applications must install and import released v1.
 
 `api/baseline.txt` is the byte-preserved released-v1 API record. `api/v2.txt`
-is the active compatibility baseline for the planned v2 source; verification
+is the active compatibility baseline for the v2 candidate; verification
 must never regenerate the v1 record from v2 source.
 
 Before `v1`, minor releases MAY contain reviewed breaking changes, but every

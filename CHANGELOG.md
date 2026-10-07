@@ -5,10 +5,11 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased] (v2.0.0)
 
-The root source tree now uses the planned `/v2` module path. Version 2 remains
-unpublished and non-releasable until its release gates and owned-consumer
-migrations pass. Existing consumers must remain on released v1 without local
-`replace` directives.
+The root source tree now uses the `/v2` module path. Version 2 is an unpublished
+release candidate requiring release qualification before publication. Actual
+public consumer verification and affected owned adoption follow publication
+before package security closure. Existing consumers must remain on released v1
+without local `replace` directives until v2 is published.
 
 ### Security
 
@@ -162,5 +163,5 @@ migrations pass. Existing consumers must remain on released v1 without local
 - Leased at-least-once outbox publication and dead-letter handling.
 - Property, model, fuzz, race, integration, and benchmark evidence.
 
-[Unreleased]: https://github.com/faustbrian/go-state-machine/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/faustbrian/go-state-machine/compare/v1.0.2...HEAD
 [1.0.0]: https://github.com/faustbrian/go-state-machine/releases/tag/v1.0.0
