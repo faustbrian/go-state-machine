@@ -4,7 +4,7 @@ Reviewed: 2026-10-07. Owner: go-state-machine maintainers.
 
 ## Observed released sources
 
-The public unsuffixed module has releases v1.0.0, v1.0.1 and v1.0.2. The
+The public original module has releases v1.0.0, v1.0.1 and v1.0.2. The
 reviewed tag sources are respectively
 `f091a2f3ece60a2df7eb08fd082207a0d50c1dc4`,
 `864a90281a035f6cbe057af882190e0345656775` and
@@ -31,7 +31,7 @@ and PostgreSQL controls and default-safe error strings described in the
 2.0.0 changelog and [threat model](threat-model-v2.md). The intended release is
 v2.0.0 of `github.com/faustbrian/go-state-machine/v2`; it is not publicly fixed
 until the tag and release exist and an actual public consumer is verified.
-No corrected unsuffixed-module patch or backport is asserted here.
+No corrected original-module patch or backport is asserted here.
 
 Once published, migrate imports to `/v2`, select complete finite limits for
 custom workloads, review typed-error handling and persisted-error changes,
@@ -44,8 +44,9 @@ do not consume the v2 source under the v1 module with a local replacement.
 The source behavior above is confirmed. Whether an adopting deployment gives
 an untrusted actor control over those values, or exposes sensitive diagnostics
 to unauthorized readers, is not established by this review. No remote attack,
-customer incident, CVE, GHSA, universal severity or deployment-wide affected
-range is asserted. Maintainers must triage a concrete report using the private
+customer incident, CVE, GitHub security advisory, universal severity or
+deployment-wide affected range is asserted. Maintainers must triage a concrete
+report using the private
 policy in [SECURITY](../../SECURITY.md), record reachable affected modules and
 versions, and coordinate an advisory when a vulnerability is confirmed.
 Reopen this disposition on such a report, new published source evidence, a v1
