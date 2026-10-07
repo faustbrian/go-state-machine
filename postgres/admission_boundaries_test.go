@@ -14,6 +14,149 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+func TestInstanceWritesIndependentInclusiveBoundaries(t *testing.T) {
+	for _, operation := range []string{"create", "snapshot"} {
+		for _, field := range []string{"instance", "version", "state"} {
+			for _, size := range []int{3, 4} {
+				t.Run(operation+"/"+field+"/"+strconv.Itoa(size), func(t *testing.T) {
+					id, version, state := "i", "v", "s"
+					value := strings.Repeat("x", size)
+					switch field {
+					case "instance":
+						id = value
+					case "version":
+						version = value
+					case "state":
+						state = value
+					}
+					queried, executed := false, false
+					createdAt := time.Unix(7, 0)
+					store := fakeStore(fakeDatabase{
+						queryRow: func(_ context.Context, _ string, values ...any) row {
+							queried = true
+							if len(values) != 1 || values[0] != statemachine.InstanceID(id) {
+								t.Error("snapshot lookup identity changed")
+							}
+							return fakeRow{scan: func(destinations ...any) error {
+								*destinations[0].(*string), *destinations[1].(*string) = state, version
+								return nil
+							}}
+						},
+						exec: func(_ context.Context, _ string, values ...any) (commandResult, error) {
+							executed = true
+							if len(values) < 3 || values[0] != statemachine.InstanceID(id) || values[1] != state || values[2] != statemachine.Version(version) {
+								t.Error("admitted write arguments changed")
+							}
+							if operation == "snapshot" && (len(values) != 5 || values[3] != uint64(0) || values[4] != createdAt) {
+								t.Error("snapshot replay boundary changed")
+							}
+							return fakeCommandResult(1), nil
+						},
+					})
+					store.limits = DefaultLimits()
+					store.limits.MaxInstanceIDBytes, store.limits.MaxIdentifierBytes, store.limits.MaxEncodedStateBytes = 3, 3, 3
+					var err error
+					if operation == "create" {
+						err = store.Create(t.Context(), statemachine.Instance[string]{ID: statemachine.InstanceID(id), State: state, DefinitionVersion: statemachine.Version(version)})
+					} else {
+						err = store.SaveSnapshot(t.Context(), statemachine.Snapshot[string]{InstanceID: statemachine.InstanceID(id), State: state, DefinitionVersion: statemachine.Version(version), CreatedAt: createdAt})
+					}
+					if size == 4 {
+						if !errors.Is(err, statemachine.ErrLimitExceeded) || queried || executed {
+							t.Fatalf("over-cap write reached database: err=%v queried=%v executed=%v", err, queried, executed)
+						}
+					} else if err != nil || !executed || queried != (operation == "snapshot") {
+						t.Fatalf("exact-cap write refused: err=%v queried=%v executed=%v", err, queried, executed)
+					}
+				})
+			}
+		}
+	}
+}
+
+func TestSnapshotRequiredIdentitiesRefuseIndependently(t *testing.T) {
+	for _, field := range []string{"instance", "version"} {
+		t.Run(field, func(t *testing.T) {
+			called := false
+			store := fakeStore(fakeDatabase{queryRow: func(context.Context, string, ...any) row {
+				called = true
+				return fakeRow{scan: func(...any) error { return errors.New("unexpected database call") }}
+			}})
+			snapshot := statemachine.Snapshot[string]{InstanceID: "i", DefinitionVersion: "v", State: "s"}
+			if field == "instance" {
+				snapshot.InstanceID = ""
+			} else {
+				snapshot.DefinitionVersion = ""
+			}
+			if err := store.SaveSnapshot(t.Context(), snapshot); !errors.Is(err, statemachine.ErrInvalidStoreInput) || called {
+				t.Fatalf("missing identity crossed admission: err=%v called=%v", err, called)
+			}
+		})
+	}
+}
+
+func TestInstanceReadsIndependentInclusiveBoundaries(t *testing.T) {
+	for _, operation := range []string{"load", "snapshot"} {
+		for _, field := range []string{"instance", "version", "state"} {
+			for _, size := range []int{3, 4} {
+				t.Run(operation+"/"+field+"/"+strconv.Itoa(size), func(t *testing.T) {
+					id, version, state := "i", "v", "s"
+					value := strings.Repeat("x", size)
+					switch field {
+					case "instance":
+						id = value
+					case "version":
+						version = value
+					case "state":
+						state = value
+					}
+					queried, decoded := false, false
+					createdAt := time.Unix(7, 0)
+					store := fakeStore(fakeDatabase{queryRow: func(_ context.Context, _ string, values ...any) row {
+						queried = true
+						if len(values) != 1 || values[0] != statemachine.InstanceID(id) {
+							t.Error("read lookup identity changed")
+						}
+						return fakeRow{scan: func(destinations ...any) error {
+							*destinations[0].(*string), *destinations[1].(*string) = state, version
+							*destinations[2].(*int64) = 1
+							if operation == "snapshot" {
+								*destinations[3].(*time.Time) = createdAt
+							}
+							return nil
+						}}
+					}})
+					store.limits = DefaultLimits()
+					store.limits.MaxInstanceIDBytes, store.limits.MaxIdentifierBytes, store.limits.MaxEncodedStateBytes = 3, 3, 3
+					store.stateCodec.Decode = func(value string) (string, error) { decoded = true; return value, nil }
+					var gotID statemachine.InstanceID
+					var gotState string
+					var gotVersion statemachine.Version
+					var gotLock uint64
+					var err error
+					if operation == "load" {
+						got, loadErr := store.Load(t.Context(), statemachine.InstanceID(id))
+						gotID, gotState, gotVersion, gotLock, err = got.ID, got.State, got.DefinitionVersion, got.LockVersion, loadErr
+					} else {
+						got, loadErr := store.LoadSnapshot(t.Context(), statemachine.InstanceID(id))
+						gotID, gotState, gotVersion, gotLock, err = got.InstanceID, got.State, got.DefinitionVersion, got.LockVersion, loadErr
+						if size == 3 && !got.CreatedAt.Equal(createdAt) {
+							t.Error("snapshot timestamp changed")
+						}
+					}
+					if size == 4 {
+						if !errors.Is(err, statemachine.ErrLimitExceeded) || decoded || gotID != "" || gotState != "" || gotVersion != "" || gotLock != 0 || queried != (field != "instance") {
+							t.Fatalf("over-cap row decoded or published: err=%v queried=%v decoded=%v", err, queried, decoded)
+						}
+					} else if err != nil || !queried || !decoded || gotID != statemachine.InstanceID(id) || gotState != state || gotVersion != statemachine.Version(version) || gotLock != 1 {
+						t.Fatalf("exact-cap row refused or changed: err=%v queried=%v decoded=%v", err, queried, decoded)
+					}
+				})
+			}
+		}
+	}
+}
+
 func TestExplicitPersistenceLimitsRequirePositiveFields(t *testing.T) {
 	options := Options[string, string]{
 		Pool: &pgxpool.Pool{}, Schema: "state_machine",
