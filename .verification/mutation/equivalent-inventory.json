@@ -25,6 +25,39 @@
           "reason": "Independent reviewer /root/state_machine_signed_row_final_review ACCEPT this coordinate; date 2026-10-07; expiry 2026-11-06 or any bound source/verifier, normalization order or valid caller change. Gremlins changes MaxCompiledElements>0 to >=0. CompileWithLimits replaces zero with the positive default before the sole production Limits.valid call. Negative values fail both predicates; positive values pass both. Zero is unreachable at this guard through the public producer. Other explicit limits, resource charges and production guards remain unchanged. Private direct valid calls with zero can distinguish the mutation and are outside this producer domain. Native37601795652 remains FAILED with this coordinate LIVED; no native counters or other survivors are accepted."
         }
       ]
+    },
+    {
+      "module_directory": ".",
+      "package_directory": "postgres",
+      "source_digest": "6718d74a2495328f7802836de2128d4531fa83e644b50b97cc8a36b4cf9337b2",
+      "gremlins_version": "v0.6.0",
+      "gremlins_verifier_sha256": "390cf4085a0063fe5dcaa29ce942ea4cb8c7876347da90376b65dc8c5c811104",
+      "mutations": [
+        {
+          "file_name": "store.go",
+          "type": "CONDITIONALS_BOUNDARY",
+          "line": 624,
+          "column": 18,
+          "contract_domain": "Public New/NewWithLimits stores with immutable caller inputs and standard JSON serialization; identical result admission, returned document, encoded bytes and executor effects",
+          "reason": "Independent reviewer /root/state_adapter_three_domain_candidates ACCEPT this coordinate; date 2026-10-07; expiry 2026-11-06 or any relevant constructor, serialization layout, method, ownership or verifier semantic change. Gremlins changes len(encoded)>MaxResultBytes to >=. Public constructors retain the private json.Marshal collaborator. For n effects, L total bytes in the seven document/metadata strings and effect kinds, and G sum of ceil(payload bytes/3), successful preflight consumes P=256+6L+48n+4G, whereas concrete JSON output J<=143+6L+27n+4G. Thus J<P<=MaxResultBytes, with slack at least 113+21n; equality is unreachable. JSON escaping, invalid UTF-8 replacement, HTML escaping, nil/empty effects and cloned base64 payloads satisfy these bounds. Preflight divisions prevent arithmetic overflow. Root Metadata/Effect layout is reviewed at production digest 6c51f661a6830011a11d2fa195f7f219160947900d5442933fe0093e68aad641; changing those types or adding custom JSON methods invalidates this disposition. Private marshal injection can distinguish equality and is excluded, as are unsafe/reflection modifications and concurrent borrowed-input mutation. This does not accept any other survivor or rewrite native counters; current hosted qualification remains pending."
+        },
+        {
+          "file_name": "store.go",
+          "type": "INVERT_LOGICAL",
+          "line": 693,
+          "column": 15,
+          "contract_domain": "Public store result, history and claim operations through production consumeSize callers; identical bounded accounting, admission, errors and executor effects",
+          "reason": "Independent reviewer /root/state_adapter_three_domain_candidates ACCEPT this coordinate; date 2026-10-07; expiry 2026-11-06 or any relevant helper caller, ownership or verifier semantic change. Gremlins changes only the first || to &&. All actual production callers supply nonnegative lengths, fixed allowances or representable nonnegative base64 groups and strictly positive multipliers 1, 4 or 6. Therefore count<0 and multiplier<=0 are both false, and the original (false||false)||overflow and mutant (false&&false)||overflow select the identical remaining-budget predicate. Accepted subtraction and overflow prevention are unchanged. Private direct helper calls with negative counts or nonpositive multipliers can distinguish the mutation and are outside this public operation domain. Relevant root Metadata/Effect layout is reviewed at production digest 6c51f661a6830011a11d2fa195f7f219160947900d5442933fe0093e68aad641. This is not global helper equivalence, a native KILLED result, release qualification or acceptance of any unlisted coordinate."
+        },
+        {
+          "file_name": "store.go",
+          "type": "CONDITIONALS_BOUNDARY",
+          "line": 693,
+          "column": 29,
+          "contract_domain": "Public store result, history and claim operations through production consumeSize callers; identical bounded accounting, admission, errors and executor effects",
+          "reason": "Independent reviewer /root/state_adapter_three_domain_candidates ACCEPT this coordinate; date 2026-10-07; expiry 2026-11-06 or any relevant helper caller, ownership or verifier semantic change. Gremlins changes multiplier<=0 to <0. Every production caller supplies multiplier 1, 4 or 6, so equality with zero is unreachable. The guard and remaining-budget division, admitted subtraction, overflow prevention and observable results are identical. Private direct helper calls with zero or negative multipliers are excluded; no caller-domain restriction is added to the public API. Relevant root Metadata/Effect layout is reviewed at production digest 6c51f661a6830011a11d2fa195f7f219160947900d5442933fe0093e68aad641. This is not global helper equivalence, a native KILLED result, release qualification or acceptance of any unlisted coordinate."
+        }
+      ]
     }
   ]
 }
