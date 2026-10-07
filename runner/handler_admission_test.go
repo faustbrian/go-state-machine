@@ -22,11 +22,11 @@ func TestHandleRequiresActiveContextBeforeAttempt(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	got, panicked, attempted := executor.handle(ctx, statemachine.Effect{Kind: "unattempted"})
+	panicked, attempted, got := executor.handle(ctx, statemachine.Effect{Kind: "unattempted"})
 	if !errors.Is(got, context.Canceled) || panicked || attempted || called != 0 {
 		t.Fatalf("canceled admission: err=%v panicked=%v attempted=%v calls=%d", got, panicked, attempted, called)
 	}
-	got, panicked, attempted = executor.handle(context.Background(), statemachine.Effect{Kind: "attempted"})
+	panicked, attempted, got = executor.handle(context.Background(), statemachine.Effect{Kind: "attempted"})
 	if !errors.Is(got, want) || panicked || !attempted || called != 1 {
 		t.Fatalf("active admission: err=%v panicked=%v attempted=%v calls=%d", got, panicked, attempted, called)
 	}

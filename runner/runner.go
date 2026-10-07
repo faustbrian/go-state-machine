@@ -189,7 +189,7 @@ func (runner *Runner) Execute(ctx context.Context, effects []statemachine.Effect
 		if err := ctx.Err(); err != nil {
 			return records, err
 		}
-		handlerErr, panicked, attempted := runner.handle(ctx, effect)
+		panicked, attempted, handlerErr := runner.handle(ctx, effect)
 		if !attempted {
 			return records, handlerErr
 		}
@@ -228,9 +228,9 @@ func (runner *Runner) Execute(ctx context.Context, effects []statemachine.Effect
 	return records, nil
 }
 
-func (runner *Runner) handle(ctx context.Context, effect statemachine.Effect) (handlerErr error, panicked bool, attempted bool) {
+func (runner *Runner) handle(ctx context.Context, effect statemachine.Effect) (panicked bool, attempted bool, handlerErr error) {
 	if err := ctx.Err(); err != nil {
-		return err, false, false
+		return false, false, err
 	}
 	defer func() {
 		if recover() != nil {
@@ -240,7 +240,7 @@ func (runner *Runner) handle(ctx context.Context, effect statemachine.Effect) (h
 	}()
 	input := cloneEffect(effect)
 	attempted = true
-	return runner.handler.Handle(ctx, input), false, attempted
+	return false, attempted, runner.handler.Handle(ctx, input)
 }
 
 func cloneEffect(effect statemachine.Effect) statemachine.Effect {
