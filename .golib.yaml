@@ -45,7 +45,39 @@ operations:
   - module: .
     gate: fuzz
     steps:
-      - type: make
-        makefile: verification/package.mk
-        target: fuzz
-        timeout: 20m
+      - type: go-test
+        packages: ["."]
+        fuzz: '^FuzzSerializedEvent$'
+        budget: 2s
+        count: 1
+        timeout: 2m
+      - type: go-test
+        packages: ["."]
+        fuzz: '^FuzzSerializedDefinition$'
+        budget: 2s
+        count: 1
+        timeout: 2m
+      - type: go-test
+        packages: ["."]
+        fuzz: '^FuzzSerializedContext$'
+        budget: 2s
+        count: 1
+        timeout: 2m
+      - type: go-test
+        packages: ["."]
+        fuzz: '^FuzzSerializedHistory$'
+        budget: 2s
+        count: 1
+        timeout: 2m
+      - type: go-test
+        packages: ["."]
+        fuzz: '^FuzzSerializedSnapshot$'
+        budget: 2s
+        count: 1
+        timeout: 2m
+      - type: go-test
+        packages: ["."]
+        fuzz: '^FuzzSerializedGraphImport$'
+        budget: 2s
+        count: 1
+        timeout: 2m
