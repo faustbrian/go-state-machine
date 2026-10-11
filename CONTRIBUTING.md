@@ -49,7 +49,7 @@ required results remain intact.
 
 For ordinary source work, `go test ./...` runs deterministic tests, fuzz seeds
 and saved corpus regressions without PostgreSQL or Docker. Use the qualified
-public Golib v2.1.0 verifier declared in `.golib.yaml` for repository checks:
+public Golib v2.1.1 verifier declared in `.golib.yaml` for repository checks:
 
 ```bash
 make inventory
