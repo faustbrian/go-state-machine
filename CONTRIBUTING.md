@@ -2,15 +2,20 @@
 
 ## Before Editing
 
-1. Read [`AGENTS.md`](AGENTS.md) and the affected module's goals and docs.
-2. Run `make inventory` and the narrow baseline gate for the module.
-3. Identify owned dependencies and reverse dependants in `modules.json`.
+1. Read the README, [`AGENTS.md`](AGENTS.md) and the affected API contract.
+2. Start with `go test ./...` or a focused package/test selector.
+3. Inspect direct consumers when changing a public or composition contract.
 4. Preserve unrelated work and generated/corpus provenance.
+
+An ordinary fix stays in this repository. It does not require sibling checkouts,
+Tools edits, ecosystem catalog updates or agent-goal ledgers. Change manifests
+only when their owned facts change, not merely because source changed.
 
 ## Changes
 
-Keep commits focused and conventional. Update every affected changelog with
-the behavior and migration impact. Public API changes require compatibility
+Keep commits focused and conventional. Update changelogs for material public
+behavior, compatibility or adoption changes, not CI-only administration.
+Public API changes require compatibility
 evidence and documentation. Specification behavior requires a decision record,
 fixture coverage, and interoperability evidence.
 
@@ -24,7 +29,10 @@ the affected stable decision entries, and complete the Specification Decisions
 section of the pull request template. An unresolved interpretation or stale
 source pin is release-blocking; peer behavior cannot silently select policy.
 
-Required mutation gates must finish with zero surviving viable mutants.
+Mutation is optional developer-local or selected scheduled assurance, not a PR
+prerequisite. Investigate viable survivors and add focused regressions for real
+defects; moving a campaign off PRs does not waive a confirmed correctness or
+security defect. Equivalent/invalid mutants retain reviewed narrow dispositions.
 
 Do not add package-local workflows, permanent replacements, machine-specific
 paths, bypass flags, broad mutation exclusions, or aggregate quality metrics
@@ -35,35 +43,54 @@ that hide a failing package.
 Classify changes under [proportional assurance](AGENTS.md#proportional-assurance).
 The root module collects complete native coverage in explicit evidence mode.
 Failed tests, missing packages and invalid or absent profiles remain errors;
-behavioral risk review replaces universal exact-percentage acceptance. Final
-cancellation and immutable-preflight guards remain intact. Mutation, security
-and strict aggregate checks remain required.
+behavioral risk review replaces universal exact-percentage acceptance.
+Cancellation and immutable-preflight guards, security checks and fail-closed
+required results remain intact.
 
-CI builds matched immutable workflow and tooling source
-`55c50f11cc9a33a5306d71cb3dac71a9c92ed13c` with `source_bootstrap: true`,
-using official public dependency and checksum authorities. This development
-route does not qualify a published SDK binary. The declared v1.8.5 checksum
-retains published tool metadata; that binary does not support the optional
-coverage policy. For local development, build `cmd/golib` from the pinned
-pristine Tools source with task-owned disposable Go caches and select it
-through Make's `GOLIB` variable. Public v2 publication, clean consumers and
-owned adoption remain separate from source CI.
-
-Run during development:
+For ordinary source work, `go test ./...` runs deterministic tests, fuzz seeds
+and saved corpus regressions without PostgreSQL or Docker. Use the qualified
+public Golib v2.1.0 verifier declared in `.golib.yaml` for repository checks:
 
 ```bash
 make inventory
 make check
-```
-
-Before submitting a repository-wide change:
-
-```bash
 make ci
 ```
 
-The full scheduled and release gate is `make ci`. Report every unavailable or
-failing command; do not describe partial results as release-ready.
+`check` and `ci` use bounded local checks, including the named compiled-machine,
+memory-store and runner race regressions in `.golib.yaml`; they do not run full
+mutation or fuzz campaigns. Documentation changes need relevant structure, links
+and examples, not unrelated runtime work. Public API, concurrency and persistence
+changes retain their affected compatibility, race or integration checks.
+
+The manifest-driven Make checks also provision PostgreSQL and run tagged
+integration tests, requiring Docker. The default Go command above and focused
+standalone race selections do not provision services. For a narrow change,
+select its relevant package tests rather than the complete manifest route.
+
+For active exploration, select one fuzz target and a small budget; long campaigns
+belong in scheduled assurance. Optional local mutation selects one package with
+the qualified verifier. These examples are not all-change requirements:
+
+```bash
+GOMAXPROCS=2 go test -run '^$' -fuzz '^FuzzSerializedHistory$' -fuzztime=2s -parallel=1 -timeout=2m .
+golib mutation --module . --package .
+```
+
+For changes to the PostgreSQL persistence or lease contract, run the affected
+integration tests with a working Docker daemon or a disposable database selected
+through `POSTGRES_URL`:
+
+```bash
+go test -tags=integration ./postgres
+```
+
+`make check-full` retains online specification validation and explicit full
+assurance with the original fuzz budgets. Relevant release qualification uses
+`golib release dry-run --module .`. Select these for their material risk or
+release boundary, not every commit. Report unavailable or failed checks honestly;
+a fast local pass is not public-release or hosted-CI qualification.
+CI/configuration-only changes do not require a module release.
 
 ## Adding A Module
 

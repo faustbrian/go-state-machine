@@ -3,7 +3,7 @@
 [![CI](https://github.com/faustbrian/go-state-machine/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-state-machine/actions/workflows/ci.yml)
 [![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-state-machine/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-risk_based_evidence-blue)](CONTRIBUTING.md#verification)
-[![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
+[![Mutation](https://img.shields.io/badge/mutation-selected_assurance-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-state-machine/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-state-machine/v2)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-state-machine?sort=semver)](https://github.com/faustbrian/go-state-machine/releases)
@@ -147,7 +147,12 @@ All CI gates are exposed through the `Makefile`:
 make check
 ```
 
-The PostgreSQL integration and race gates require a working Docker daemon.
+Default `go test ./...` and the focused standalone race regressions do not
+require Docker. Manifest-driven `make check` also provisions PostgreSQL and
+runs tagged integration tests, so it requires a working Docker daemon.
+Direct PostgreSQL integration tests can instead use a disposable database
+selected through `POSTGRES_URL`; see
+[contributor verification guidance](CONTRIBUTING.md#verification).
 
 ## License
 

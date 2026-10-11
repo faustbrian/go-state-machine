@@ -1,6 +1,6 @@
 schema_version: 1
-tool_version: v1.8.5
-tool_checksums_sha256: 57f81a14b32fa629f9ed5c9cc6edc62c171095f5da6e36fa989dc12442fe1983
+tool_version: v2.1.0
+tool_checksums_sha256: 5517b5ec9872ad51546409de37b2932a90f230c673570998f8696416b149e5c6
 
 manifest:
   modules: modules.json
@@ -28,6 +28,27 @@ api:
       path: api/v2.txt
 
 operations:
+  - module: .
+    gate: local-test
+    steps:
+      - type: go-test
+        packages: ["."]
+        run: '^TestCompiledMachineSupportsConcurrentTransitions$'
+        race: true
+        count: 1
+        timeout: 1m
+      - type: go-test
+        packages: ["./memory"]
+        run: '^TestStorePreventsLostUpdatesUnderContention$'
+        race: true
+        count: 1
+        timeout: 1m
+      - type: go-test
+        packages: ["./runner"]
+        run: '^TestRunnerSupportsConcurrentIndependentExecutions$'
+        race: true
+        count: 1
+        timeout: 1m
   - module: .
     gate: benchmark
     steps:
