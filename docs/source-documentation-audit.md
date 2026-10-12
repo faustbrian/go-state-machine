@@ -185,3 +185,12 @@ not newly exercised by this prose pass.
 | `statemachinetest/runner.go` | wrapper factory and ordered/canceled/panicked runner contract |
 | `statemachinetest/store.go` | portable backend fixture obligations and limited conformance assertions |
 | `store.go` | portable CAS/history/snapshot capabilities and provider distinctions |
+
+## Objective Enforcement
+
+The checksum-pinned public Tools v2.4.0 verifier now supplies
+`make source-docs-check` as a prerequisite of the existing local and CI Make
+routes. Ordinary shared CI selects strict source-documentation checking and
+requires its result. Native prerequisites, operation budgets, security and
+release controls are retained. Hosted exact-head evidence is recorded by the
+coordination ledger; configuration alone does not establish green delivery.
