@@ -1,5 +1,7 @@
 // Package memory provides an in-process Store implementation for tests,
-// development, and ephemeral applications.
+// development, and ephemeral applications. Use New; no process recovery, external
+// resource or outbox is provided. History retention is unbounded despite page
+// limits. Store owns a mutex, while comparable state/event referents stay shallow.
 package memory
 
 import (
@@ -11,7 +13,10 @@ import (
 	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
-// Store is a concurrency-safe in-memory state machine store.
+// Store serializes state/history/snapshot access and copies effect payloads on
+// write and return. Use New; zero-value writes cannot initialize its maps.
+// Contexts must be non-nil and are checked before mutex acquisition, not while
+// waiting or after it. Keep caller-owned state/event referents stable.
 type Store[S statemachine.State, E statemachine.Event] struct {
 	mu        sync.RWMutex
 	instances map[statemachine.InstanceID]statemachine.Instance[S]
@@ -73,7 +78,10 @@ func (store *Store[S, E]) Load(ctx context.Context, id statemachine.InstanceID) 
 }
 
 // CompareAndTransition atomically checks the lock and prior state, updates the
-// current state, and appends history under one mutex boundary.
+// current state, and appends history under one mutex boundary. The result is
+// trusted, not revalidated against a Machine. The nonempty definition version
+// may change; payload buffers are copied. uint64 lock increments are not guarded
+// against wraparound, unlike PostgreSQL signed-bigint representation.
 func (store *Store[S, E]) CompareAndTransition(ctx context.Context, id statemachine.InstanceID, expected uint64, result statemachine.Result[S, E], occurredAt time.Time) (statemachine.Instance[S], statemachine.HistoryEntry[S, E], error) {
 	if err := ctx.Err(); err != nil {
 		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, err

@@ -56,8 +56,9 @@ Existing callers of `New` retain the default behavior without an API migration.
 3. insert one outbox record per planned effect;
 4. commit all records together.
 
-Any failure rolls the whole transaction back. A stale lock returns
-`ErrStoreConflict`; callers must reload and recalculate. PostgreSQL does not
+Pre-commit failures attempt bounded rollback. A commit error may leave the
+durable outcome uncertain; reconcile state/history before retrying. A stale lock
+returns `ErrStoreConflict`; callers must reload and recalculate. PostgreSQL does not
 execute a previously calculated result after silently rebasing it.
 
 Snapshots are validated against initial state or the history entry at their

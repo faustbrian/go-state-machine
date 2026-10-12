@@ -5,6 +5,13 @@ based on Keep a Changelog, and the project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Documentation
+
+- Clarify structural copies versus borrowed callbacks/typed referents, partial
+  runner/relay results, history-validation scope and PostgreSQL commit uncertainty.
+- Document token fencing versus lease expiry, provider resource differences and
+  application-owned delivery/idempotency without changing runtime behavior.
+
 ## [2.0.0] - 2026-10-07
 
 The root module uses the `/v2` import path. Migration requires changing imports,

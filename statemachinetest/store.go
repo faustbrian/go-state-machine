@@ -1,5 +1,7 @@
 // Package statemachinetest provides reusable conformance tests for state
-// machine integrations.
+// machine integrations. StoreContract and RunnerContract exercise selected
+// portable cases, not all backend crash, concurrency or resource guarantees.
+// Factories own fresh fixtures and cleanup; no services are provisioned here.
 package statemachinetest
 
 import (
@@ -14,12 +16,17 @@ import (
 
 // StoreFixture supplies typed values used by StoreContract.
 type StoreFixture[S statemachine.State, E statemachine.Event] struct {
+	// Instance must be a valid, nonempty, lock-zero instance for each fresh store.
 	Instance statemachine.Instance[S]
-	Result   statemachine.Result[S, E]
+	// Result must leave Instance.State for a valid successor with nonempty version.
+	Result statemachine.Result[S, E]
 }
 
 // StoreContract verifies the portable Store contract. Backend packages should
 // call it from their own test suite in addition to backend-specific tests.
+// The factory must return an independent empty usable store on each call and
+// arrange any resource cleanup. It verifies required capabilities, basic CAS,
+// history/snapshot round-trips, not-found behavior and pre-cancellation only.
 func StoreContract[S statemachine.State, E statemachine.Event](
 	t *testing.T,
 	factory func() statemachine.Store[S, E],

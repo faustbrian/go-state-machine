@@ -3,13 +3,20 @@ package statemachine
 // EvolutionLimits bound direct compilation and migration of caller-supplied
 // versioned history. Every field must be positive when limits are explicit.
 type EvolutionLimits struct {
-	MaxMigrations          int
-	MaxHistoryEntries      int
-	MaxMigrationSteps      int
-	MaxCarriedEffects      int
-	MaxEffectPayloadBytes  int
+	// MaxMigrations bounds records admitted during evolution compilation.
+	MaxMigrations int
+	// MaxHistoryEntries bounds one migrated history slice.
+	MaxHistoryEntries int
+	// MaxMigrationSteps bounds total path edges across snapshot and every history result.
+	MaxMigrationSteps int
+	// MaxCarriedEffects bounds effect occurrences across the complete history.
+	MaxCarriedEffects int
+	// MaxEffectPayloadBytes bounds each carried payload occurrence.
+	MaxEffectPayloadBytes int
+	// MaxCarriedPayloadBytes bounds total copied payload occurrences, including shared inputs.
 	MaxCarriedPayloadBytes int
-	MaxVersionBytes        int
+	// MaxVersionBytes bounds each target, snapshot, history, and migration version in bytes.
+	MaxVersionBytes int
 }
 
 // DefaultEvolutionLimits returns finite direct-migration budgets.

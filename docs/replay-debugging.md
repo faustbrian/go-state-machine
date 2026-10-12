@@ -21,7 +21,9 @@ state continuity. It returns the reconstructed final snapshot without running
 guards or effects. After any required migration, use
 `machine.ValidateHistory(snapshot, entries)` to additionally reject definition
 versions, transition identifiers, event identifiers, or destinations that are
-incompatible with the exact compiled machine.
+incompatible with its selected transition topology. This check does not rerun
+guards, validate stored effects, or reject terminal/unknown source eligibility
+for wildcard records; passing it is not authenticated proof of a live execution.
 
 Debugging procedure:
 

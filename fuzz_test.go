@@ -9,6 +9,7 @@ import (
 	"github.com/faustbrian/go-state-machine/v2/diagram"
 )
 
+// FuzzSerializedEvent exercises JSON event encoding/decoding after accepting typed inputs.
 func FuzzSerializedEvent(f *testing.F) {
 	f.Add([]byte(`{"Event":"pay","Context":1,"Metadata":{"CorrelationID":"order-1"}}`))
 	f.Add([]byte(`null`))
@@ -28,6 +29,7 @@ func FuzzSerializedEvent(f *testing.F) {
 	})
 }
 
+// FuzzSerializedDefinition feeds decoded graphs to compilation with 100-state/transition ceilings.
 func FuzzSerializedDefinition(f *testing.F) {
 	f.Add([]byte(`{"Version":"v1","Initial":"a","States":[{"State":"a"}]}`))
 	f.Add([]byte(`{}`))
@@ -43,6 +45,7 @@ func FuzzSerializedDefinition(f *testing.F) {
 	})
 }
 
+// FuzzSerializedContext exercises reference-bearing guard context with a deep clone and at most 100 roles.
 func FuzzSerializedContext(f *testing.F) {
 	type transitionContext struct {
 		Roles []string `json:"roles"`
@@ -82,6 +85,7 @@ func FuzzSerializedContext(f *testing.F) {
 	})
 }
 
+// FuzzSerializedHistory feeds decoded entries to continuity validation with a 100-entry limit.
 func FuzzSerializedHistory(f *testing.F) {
 	f.Add([]byte(`[{"InstanceID":"one","Sequence":1,"Result":{"DefinitionVersion":"v1","Previous":"a","Next":"b","TransitionID":"go"}}]`))
 	f.Add([]byte(`[]`))
@@ -96,6 +100,7 @@ func FuzzSerializedHistory(f *testing.F) {
 	})
 }
 
+// FuzzSerializedSnapshot checks decoded replay boundaries with empty history, not graph membership.
 func FuzzSerializedSnapshot(f *testing.F) {
 	f.Add([]byte(`{"InstanceID":"one","State":"a","DefinitionVersion":"v1","LockVersion":0}`))
 	f.Add([]byte(`null`))
@@ -110,6 +115,7 @@ func FuzzSerializedSnapshot(f *testing.F) {
 	})
 }
 
+// FuzzSerializedGraphImport checks decoded imports through both bounded renderers with capped labels.
 func FuzzSerializedGraphImport(f *testing.F) {
 	f.Add([]byte(`{"Version":"v1","Initial":"a","States":[{"State":"a","Terminal":true}]}`))
 	f.Add([]byte(`null`))

@@ -1,6 +1,9 @@
 // Package postgres provides durable PostgreSQL state machine persistence.
 // CompareAndTransition commits current state, history, and outbox records in
-// one database transaction.
+// one database transaction. Start with New and Migrate; the pgx pool, codecs,
+// ID generator and clock remain caller-owned. No worker or pool shutdown is
+// provided. Concurrent use requires safe collaborators and stable typed data.
+// Persistence limits bound admitted data, not arbitrary codec or driver allocation.
 package postgres
 
 import (
@@ -18,21 +21,32 @@ import (
 
 // Codec converts stable typed identifiers to their durable representation.
 type Codec[T any] struct {
+	// Encode produces stable durable text; outputs and errors are caller-controlled.
 	Encode func(T) (string, error)
+	// Decode reconstructs a typed value; it must agree with persisted Encode identities.
 	Decode func(string) (T, error)
 }
 
-// Limits bounds values before PostgreSQL encodes, allocates, or writes them.
+// Limits bounds admitted persistence representations at owned write/decode
+// boundaries. It does not cap arbitrary codec allocation or driver row buffering.
 // Machine carries the limits used by the Machine that produced Results.
 type Limits struct {
-	Machine              statemachine.Limits
-	MaxInstanceIDBytes   int
+	// Machine supplies metadata/effect bounds for supplied Results, not graph verification.
+	Machine statemachine.Limits
+	// MaxInstanceIDBytes bounds instance identities on write and read requests.
+	MaxInstanceIDBytes int
+	// MaxEncodedStateBytes bounds codec state outputs and loaded state text.
 	MaxEncodedStateBytes int
+	// MaxEncodedEventBytes bounds codec event outputs and stored event text.
 	MaxEncodedEventBytes int
-	MaxIdentifierBytes   int
-	MaxResultBytes       int
-	MaxHistoryBytes      int
-	MaxClaimBytes        int
+	// MaxIdentifierBytes bounds definition, transition, effect, owner, token and outbox IDs.
+	MaxIdentifierBytes int
+	// MaxResultBytes bounds conservative preflight and actual serialized result bytes.
+	MaxResultBytes int
+	// MaxHistoryBytes bounds aggregate serialized result bytes in one returned page.
+	MaxHistoryBytes int
+	// MaxClaimBytes bounds candidate ID, instance, kind and payload bytes per batch.
+	MaxClaimBytes int
 }
 
 // DefaultLimits returns conservative PostgreSQL persistence bounds.
@@ -49,7 +63,8 @@ func DefaultLimits() Limits {
 	}
 }
 
-// TextCodec persists the underlying value of a string-based identifier.
+// TextCodec preserves underlying string bytes without normalization or domain
+// validation. Applications own identifier stability across deployments.
 func TextCodec[T ~string]() Codec[T] {
 	return Codec[T]{
 		Encode: func(value T) (string, error) { return string(value), nil },
@@ -59,15 +74,23 @@ func TextCodec[T ~string]() Codec[T] {
 
 // Options defines explicit PostgreSQL dependencies.
 type Options[S statemachine.State, E statemachine.Event] struct {
-	Pool       *pgxpool.Pool
-	Schema     string
+	// Pool is borrowed and must stay open until all store/relay operations stop.
+	Pool *pgxpool.Pool
+	// Schema defaults to public and must match lowercase ASCII identifier syntax.
+	Schema string
+	// StateCodec persists stable state identities; both callbacks are required.
 	StateCodec Codec[S]
+	// EventCodec persists stable event identities; both callbacks are required.
 	EventCodec Codec[E]
-	NewID      func() string
-	Clock      func() time.Time
+	// NewID supplies nonempty unique outbox IDs and claim-generation tokens.
+	NewID func() string
+	// Clock supplies claim/recovery time; it must be valid and concurrency-safe.
+	Clock func() time.Time
 }
 
-// Store persists typed state machine instances.
+// Store persists typed state machine instances through a borrowed pgx pool.
+// Construct with New; contexts must be non-nil. Codec/ID/clock callbacks are
+// trusted and not panic-contained. IDs and codec representations must be stable.
 type Store[S statemachine.State, E statemachine.Event] struct {
 	pool       database
 	schema     string
@@ -90,7 +113,9 @@ func New[S statemachine.State, E statemachine.Event](options Options[S, E]) (*St
 }
 
 // NewWithLimits constructs a PostgreSQL store with explicit machine and
-// encoded persistence bounds. The limits are copied.
+// encoded persistence bounds. The limits are copied without filling partial
+// defaults. Schema defaults to public; syntax validation does not enforce all
+// server identifier-length rules. The pool is not closed by Store.
 func NewWithLimits[S statemachine.State, E statemachine.Event](options Options[S, E], limits Limits) (*Store[S, E], error) {
 	if options.Schema == "" {
 		options.Schema = "public"
@@ -286,7 +311,11 @@ type resultDocument struct {
 }
 
 // CompareAndTransition atomically updates state, appends history, and inserts
-// one outbox row per planned effect.
+// one outbox row per planned effect. It trusts supplied selection semantics
+// while validating persistence shape/size. NewID runs while transaction locks
+// may be held and must not block on reentrant access to the same rows. Sequence
+// values use signed PostgreSQL bigint, not the full uint64 domain. A commit error
+// can leave the durable outcome uncertain; reconcile it before retrying.
 func (store *Store[S, E]) CompareAndTransition(ctx context.Context, id statemachine.InstanceID, expected uint64, result statemachine.Result[S, E], occurredAt time.Time) (statemachine.Instance[S], statemachine.HistoryEntry[S, E], error) {
 	if err := ctx.Err(); err != nil {
 		return statemachine.Instance[S]{}, statemachine.HistoryEntry[S, E]{}, err
@@ -422,7 +451,9 @@ func (store *Store[S, E]) conflictReason(ctx context.Context, tx transaction, id
 	return statemachine.ErrStoreConflict
 }
 
-// History returns entries with sequence strictly greater than after.
+// History returns ascending entries with sequence strictly greater than after.
+// Zero uses the portable default; negative/excessive limits fail. The page also
+// has a serialized-result-byte budget and returns no partial page on failure.
 func (store *Store[S, E]) History(ctx context.Context, id statemachine.InstanceID, after uint64, limit int) ([]statemachine.HistoryEntry[S, E], error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err

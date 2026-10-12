@@ -1,4 +1,8 @@
-// Package diagram exports compiled transition graphs for documentation.
+// Package diagram exports Mermaid and DOT text through explicit label callbacks.
+// Start with New and checked rendering for imported graphs; unchecked methods
+// trust compiled graph structure. It owns no files, external renderer or worker.
+// Concurrency requires safe labelers and stable borrowed graph data. Labeler
+// panics and CPU/allocation costs remain application responsibilities.
 package diagram
 
 import (
@@ -29,11 +33,16 @@ var (
 
 // Limits bound imported graph structure, rendered labels, and output bytes.
 type Limits struct {
-	MaxStates               int
-	MaxTransitions          int
+	// MaxStates bounds imported state occurrences for checked rendering.
+	MaxStates int
+	// MaxTransitions bounds imported transition occurrences for checked rendering.
+	MaxTransitions int
+	// MaxSourcesPerTransition bounds exact edges on one imported transition.
 	MaxSourcesPerTransition int
-	MaxLabelBytes           int
-	MaxOutputBytes          int
+	// MaxLabelBytes bounds state labels and combined event-label/transition-ID bytes.
+	MaxLabelBytes int
+	// MaxOutputBytes bounds a conservative escaped-output estimate, not labeler allocation.
+	MaxOutputBytes int
 }
 
 // DefaultLimits returns conservative documentation export bounds.
@@ -50,7 +59,9 @@ func New[S statemachine.State, E statemachine.Event, C any](stateLabel func(S) s
 	return NewWithLimits[S, E, C](stateLabel, eventLabel, DefaultLimits())
 }
 
-// NewWithLimits constructs a renderer with explicit hostile-input bounds.
+// NewWithLimits borrows non-nil labelers and copies positive limits no greater
+// than 1<<30. Only checked methods apply them. Labelers may run before later
+// graph defects are detected, and their allocation/work cannot be preempted.
 func NewWithLimits[S statemachine.State, E statemachine.Event, C any](stateLabel func(S) string, eventLabel func(E) string, limits Limits) (*Renderer[S, E, C], error) {
 	if stateLabel == nil || eventLabel == nil {
 		return nil, ErrMissingLabeler
@@ -83,7 +94,9 @@ func (renderer *Renderer[S, E, C]) GraphvizChecked(graph statemachine.Graph[S, E
 	return checked.Graphviz(graph), nil
 }
 
-// Mermaid exports a stateDiagram-v2 document in definition order.
+// Mermaid exports stateDiagram-v2 text in definition order without validation
+// or limit enforcement. Use MermaidChecked for imported graphs; labeler panics
+// propagate and this text is not a general-purpose safe HTML representation.
 func (renderer *Renderer[S, E, C]) Mermaid(graph statemachine.Graph[S, E, C]) string {
 	var output strings.Builder
 	output.WriteString("stateDiagram-v2\n")
@@ -107,7 +120,8 @@ func (renderer *Renderer[S, E, C]) Mermaid(graph statemachine.Graph[S, E, C]) st
 	return output.String()
 }
 
-// Graphviz exports a directed DOT document in definition order.
+// Graphviz exports quoted DOT labels in definition order, without validation
+// or limit enforcement. Use GraphvizChecked for imported graphs.
 func (renderer *Renderer[S, E, C]) Graphviz(graph statemachine.Graph[S, E, C]) string {
 	var output strings.Builder
 	output.WriteString("digraph state_machine {\n")

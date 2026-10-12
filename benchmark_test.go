@@ -8,6 +8,7 @@ import (
 	statemachine "github.com/faustbrian/go-state-machine/v2"
 )
 
+// BenchmarkCompilation measures 10/1000-state chain compilation after resetting past definition setup.
 func BenchmarkCompilation(b *testing.B) {
 	for _, stateCount := range []int{10, 1_000} {
 		b.Run(fmt.Sprintf("states_%d", stateCount), func(b *testing.B) {
@@ -23,6 +24,7 @@ func BenchmarkCompilation(b *testing.B) {
 	}
 }
 
+// BenchmarkHotTransition measures one exact lookup with a reused compiled definition; setup is amortized.
 func BenchmarkHotTransition(b *testing.B) {
 	machine, err := statemachine.Compile(validDefinition())
 	if err != nil {
@@ -37,6 +39,7 @@ func BenchmarkHotTransition(b *testing.B) {
 	}
 }
 
+// BenchmarkGuardSets measures selection with 50 accepting guards; compilation setup is amortized.
 func BenchmarkGuardSets(b *testing.B) {
 	definition := validDefinition()
 	definition.Transitions[0].Guards = make([]statemachine.Guard[int], 50)
@@ -56,6 +59,7 @@ func BenchmarkGuardSets(b *testing.B) {
 	}
 }
 
+// BenchmarkReplay measures 100 alternating inputs with a reused two-state machine; setup is amortized.
 func BenchmarkReplay(b *testing.B) {
 	machine, err := statemachine.Compile(statemachine.Definition[bool, bool, struct{}]{
 		Version: "v1", Initial: false,

@@ -12,7 +12,8 @@ the source for exact signatures.
 - `Compile` validates with `DefaultLimits`.
 - `CompileWithLimits` validates with application-selected `Limits`.
 - `Machine` is the immutable compiled result.
-- `Graph` is a deep, ordered inspection copy returned by `Machine.Graph`.
+- `Graph` is an ordered mutable inspection copy: slices/payloads are copied,
+  while generic identifiers and callback referents remain shallow.
 - `Diagnostic`, `DiagnosticCode`, and `DiagnosticsError` report construction
   defects without requiring error-string parsing.
 
@@ -43,8 +44,9 @@ and `ErrLimitExceeded`.
   persisted-history validation.
 - `ValidateHistory` and `ValidateHistoryWithLimit` detect continuity and
   identity corruption without executing effects.
-- `Machine.ValidateHistory` additionally proves compatibility with the exact
-  compiled definition after any required migration.
+- `Machine.ValidateHistory` additionally checks the definition version, selected
+  transition ID and destination after migration. It does not prove guard/effect
+  eligibility or terminal/unknown source eligibility of wildcard history.
 - `Migration`, `Evolution`, `CompileEvolution`, and `MigrationError` provide
   explicit state/event renames across definition versions.
 - `ErrInvalidEvolution` and `ErrMissingMigration` identify invalid graphs and

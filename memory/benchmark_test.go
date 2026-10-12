@@ -10,6 +10,7 @@ import (
 	"github.com/faustbrian/go-state-machine/v2/memory"
 )
 
+// BenchmarkHistoryGrowth measures CAS appends while retained history grows, after resetting past store setup.
 func BenchmarkHistoryGrowth(b *testing.B) {
 	ctx := context.Background()
 	store := memory.New[bool, bool]()
@@ -30,6 +31,7 @@ func BenchmarkHistoryGrowth(b *testing.B) {
 	}
 }
 
+// BenchmarkContendedPersistence measures parallel CAS including conflict reload/retry work and retained history growth.
 func BenchmarkContendedPersistence(b *testing.B) {
 	ctx := context.Background()
 	store := memory.New[bool, bool]()

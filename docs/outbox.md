@@ -32,5 +32,9 @@ through `queue`, classify failures with `retry`, and propagate IDs using
 import them or locate them through a container.
 
 Retryable failures are rescheduled once per relay pass. Permanent failures are
-dead-lettered. Publisher panics are contained as `ErrPublisherPanic`. A stale
-or completed lease returns `ErrLeaseLost`.
+dead-lettered. Publisher panics are contained as `ErrPublisherPanic`. A replaced
+or completed token returns `ErrLeaseLost`. PostgreSQL uses expiry for reclaim
+eligibility but does not time-check acknowledgement/retry/dead-letter updates:
+an expired token can still complete before a new claim replaces it. Supply
+unique generation tokens and do not infer global or effect-index publication
+order from `SKIP LOCKED`.

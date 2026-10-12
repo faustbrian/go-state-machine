@@ -6,23 +6,32 @@ import "errors"
 // inputs. Fields must be positive, except the two aggregate compile limits,
 // whose zero values select their DefaultLimits allowances.
 type Limits struct {
-	MaxStates               int
-	MaxTransitions          int
+	// MaxStates bounds the definition state count before allocation.
+	MaxStates int
+	// MaxTransitions bounds the definition transition count before allocation.
+	MaxTransitions int
+	// MaxSourcesPerTransition bounds exact-source occurrences on one transition.
 	MaxSourcesPerTransition int
-	MaxGuardsPerTransition  int
-	MaxEffectsPerPhase      int
-	MaxEffectPayloadBytes   int
+	// MaxGuardsPerTransition bounds the combined ordinary and checked guard count.
+	MaxGuardsPerTransition int
+	// MaxEffectsPerPhase bounds each entry, exit, or transition effect list separately.
+	MaxEffectsPerPhase int
+	// MaxEffectPayloadBytes bounds one copied opaque payload occurrence.
+	MaxEffectPayloadBytes int
 	// MaxCompiledEffectPayloadBytes counts every copied payload occurrence,
 	// including shared input buffers, across the complete definition.
 	MaxCompiledEffectPayloadBytes int
 	// MaxCompiledElements counts states, transitions, sources, guards, and
 	// effects across the complete definition, including repeated occurrences.
 	MaxCompiledElements int
-	MaxMetadataBytes    int
-	MaxReplayInputs     int
+	// MaxMetadataBytes bounds combined correlation and causation bytes.
+	MaxMetadataBytes int
+	// MaxReplayInputs bounds replay inputs and machine-specific history validation.
+	MaxReplayInputs int
 }
 
-// DefaultLimits returns conservative bounds suitable for general use.
+// DefaultLimits returns finite package defaults, not a total heap or callback
+// cost guarantee. Custom plans must fit their runner/persistence bounds too.
 func DefaultLimits() Limits {
 	return Limits{
 		MaxStates: 10_000, MaxTransitions: 50_000,

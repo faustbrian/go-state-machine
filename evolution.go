@@ -9,13 +9,19 @@ import (
 // Migration converts stable state and event identifiers between adjacent
 // definition versions. Nil hooks are identity conversions.
 type Migration[S State, E Event] struct {
-	From  Version
-	To    Version
+	// From is a nonempty source version with at most one successor.
+	From Version
+	// To is a distinct nonempty successor version; the complete graph must be acyclic.
+	To Version
+	// State converts snapshot/prior/next values; nil is identity and panics propagate.
 	State func(S) (S, error)
+	// Event converts each stored event; nil is identity and panics propagate.
 	Event func(E) (E, error)
 }
 
-// Evolution is an immutable, deterministic set of version migration hooks.
+// Evolution owns a copied successor map and borrowed migration hooks. Concurrent
+// use and determinism require safe hooks and stable typed referents. Its zero
+// value supports identity-only migration; nonidentity paths are missing.
 type Evolution[S State, E Event] struct {
 	steps  map[Version]Migration[S, E]
 	limits EvolutionLimits
@@ -30,16 +36,22 @@ var (
 
 // MigrationError identifies a failing hook without rendering migrated data.
 type MigrationError struct {
-	From  Version
-	To    Version
+	// From identifies the source version of the failing hook.
+	From Version
+	// To identifies its configured successor version.
+	To Version
+	// Field identifies state, previous state, next state, or event conversion.
 	Field string
+	// Cause preserves the raw hook error; Error does not render its text.
 	Cause error
 }
 
+// Error returns fixed migration-failure text without versions, field or cause.
 func (err *MigrationError) Error() string {
 	return "statemachine: migration failed"
 }
 
+// Unwrap exposes raw causes to errors.Is/errors.As; causes may be sensitive.
 func (err *MigrationError) Unwrap() error {
 	return err.Cause
 }
@@ -92,7 +104,10 @@ func CompileEvolutionWithLimits[S State, E Event](migrations []Migration[S, E], 
 // Migrate converts a snapshot and history to target without mutating their
 // owned slices. It rejects oversized inputs before invoking any migration hook
 // and returns no partial output on error. Caller-owned hooks may have side
-// effects and must cooperate with cancellation.
+// effects and must cooperate with cancellation; their panics propagate.
+// The returned history owns copied effect buffers but generic state/event
+// referents remain shallow. Transition IDs, effects, sequences and timestamps are
+// preserved; this operation neither validates target topology nor persists output.
 func (evolution *Evolution[S, E]) Migrate(ctx context.Context, snapshot Snapshot[S], history []HistoryEntry[S, E], target Version) (Snapshot[S], []HistoryEntry[S, E], error) {
 	if target == "" {
 		return Snapshot[S]{}, nil, ErrInvalidEvolution

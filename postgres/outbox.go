@@ -13,7 +13,11 @@ const (
 	maxClaimBatch = 1_000
 )
 
-// Claim leases a bounded ordered batch using FOR UPDATE SKIP LOCKED.
+// Claim accepts a nonempty owner, positive lease duration and 1..1000 records.
+// It uses caller Clock and FOR UPDATE SKIP LOCKED, sorted by availability,
+// occurrence time and ID, not effect index or global delivery order. Candidates
+// are budgeted before lease updates; NewID must provide fresh unique tokens.
+// Expiry makes a record reclaimable; completion is token-fenced, not time-checked.
 func (store *Store[S, E]) Claim(ctx context.Context, request outbox.ClaimRequest) ([]outbox.Claim, error) {
 	if request.Owner == "" || request.Limit <= 0 || request.Limit > maxClaimBatch || request.LeaseDuration <= 0 {
 		return nil, outbox.ErrInvalidClaim
@@ -124,17 +128,21 @@ WHERE id = $4`, store.schema), request.Owner, token, leasedUntil, item.id)
 	return claims, nil
 }
 
-// MarkPublished completes a live lease after successful publication.
+// MarkPublished completes a still-current unfinished token after publication.
+// LeasedUntil is not checked: an expired token can complete before reclamation.
+// Replaced/completed tokens return ErrLeaseLost.
 func (store *Store[S, E]) MarkPublished(ctx context.Context, ref outbox.LeaseRef, at time.Time) error {
 	return store.finishLease(ctx, ref, `published_at = $3`, at, nil)
 }
 
-// Retry releases a live lease and schedules another at-least-once attempt.
+// Retry releases a still-current unfinished token and sets availability time.
+// It does not sleep or check lease expiry; non-nil cause persists only redacted.
 func (store *Store[S, E]) Retry(ctx context.Context, ref outbox.LeaseRef, availableAt time.Time, cause error) error {
 	return store.finishLease(ctx, ref, `available_at = $3`, availableAt, cause)
 }
 
-// DeadLetter permanently removes a live lease from normal claiming.
+// DeadLetter removes a still-current unfinished token from normal claiming.
+// It does not check lease expiry; non-nil cause persists only redacted.
 func (store *Store[S, E]) DeadLetter(ctx context.Context, ref outbox.LeaseRef, at time.Time, cause error) error {
 	return store.finishLease(ctx, ref, `dead_lettered_at = $3`, at, cause)
 }
@@ -146,6 +154,9 @@ func (store *Store[S, E]) finishLease(ctx context.Context, ref outbox.LeaseRef, 
 	if len(ref.ID) > store.persistenceLimits().MaxIdentifierBytes || len(ref.Token) > store.persistenceLimits().MaxIdentifierBytes {
 		return fmt.Errorf("%w: outbox lease reference", statemachine.ErrLimitExceeded)
 	}
+	// Time controls reclaim eligibility in Claim. Completion fences the current
+	// token and unfinished status, but has no expiry predicate here.
+	// Reclaiming with a fresh token prevents old-generation completion.
 	errorText := boundedErrorText(cause)
 	tag, err := store.pool.Exec(ctx, fmt.Sprintf(`
 UPDATE %s.state_machine_outbox

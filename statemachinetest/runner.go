@@ -12,6 +12,7 @@ import (
 
 // EffectExecutor is the portable execution surface verified by RunnerContract.
 type EffectExecutor interface {
+	// Execute preserves ordered attempts, completed records, cancellation and handler-panic containment.
 	Execute(context.Context, []statemachine.Effect) ([]runner.Record, error)
 }
 

@@ -1,6 +1,14 @@
-// Package statemachine provides immutable, deterministic, typed state
-// machines. Transition lookup is pure: effects are returned as data and are
-// never executed by a compiled machine.
+// Package statemachine compiles typed finite-state definitions and calculates
+// ordered, inert effect plans. Start with Compile and Machine.Transition; storage,
+// effect execution, scheduling and durable migration remain explicit integrations.
+// The root uses the standard library and owns no workers or external resources.
+//
+// Compiled lookup structure and payload buffers are copied. State/event values
+// and callback referents are shallow or borrowed; concurrency and deterministic
+// replay require stable identifiers and safe deterministic guards/cloners.
+// Contexts must be non-nil; callbacks run synchronously and cannot be preempted.
+// Error strings that omit details do not redact public fields, diagnostics,
+// raw causes or arbitrary formatting/serialization.
 package statemachine
 
 import (
@@ -28,55 +36,82 @@ type Version string
 
 // Metadata relates an event to the work that caused and contains it.
 type Metadata struct {
+	// CorrelationID groups related work; its bytes share MaxMetadataBytes with CausationID.
 	CorrelationID string
-	CausationID   string
+	// CausationID identifies preceding work; the package does not authenticate it.
+	CausationID string
 }
 
 // Effect is inert data describing work planned by a transition.
 type Effect struct {
-	Kind    string
+	// Kind selects application-owned work; compile requires a nonempty value.
+	Kind string
+	// Payload is opaque application data; compilation and plans copy its bytes.
 	Payload []byte
 }
 
 // StateDefinition describes a state and its ordered entry and exit effects.
 type StateDefinition[S State] struct {
-	State    S
+	// State is a stable comparable identifier; referenced data is not deep-cloned.
+	State S
+	// Terminal prohibits live transitions, including wildcard selection.
 	Terminal bool
-	Entry    []Effect
-	Exit     []Effect
+	// Entry supplies ordered destination effects, copied during compilation.
+	Entry []Effect
+	// Exit supplies ordered source effects, including for self-transitions.
+	Exit []Effect
 }
 
 // Rejection is a structured explanation for a guard declining a transition.
 type Rejection struct {
-	Code    string
+	// Code is an application-defined rejection label, not a package sentinel.
+	Code string
+	// Message is caller-supplied detail; callers decide whether it is safe to expose.
 	Message string
 }
 
 // Guard decides whether a transition is eligible. Guards must not perform
-// side effects.
+// side effects. A nil returned rejection accepts; non-nil rejects. Guard panics
+// become GuardPanicError.
+// Guards are borrowed synchronous callbacks, may run concurrently, and must
+// cooperate with ctx. Captured state and typed context remain caller-owned.
 type Guard[C any] func(context.Context, C) *Rejection
 
 // CheckedGuard may reject a transition or report an operational failure.
-// Returned errors are preserved for errors.Is without being rendered.
+// Returned errors are preserved for errors.Is without being rendered by Error.
+// An error wins over a simultaneous rejection. Purity, concurrency, cancellation
+// and panic-containment obligations are those of Guard.
 type CheckedGuard[C any] func(context.Context, C) (*Rejection, error)
 
 // TransitionDefinition describes one exact-source or wildcard transition.
 type TransitionDefinition[S State, E Event, C any] struct {
-	ID            TransitionID
-	Sources       []S
-	Wildcard      bool
-	Event         E
-	To            S
-	Guards        []Guard[C]
+	// ID must be nonempty and unique within the compiled definition.
+	ID TransitionID
+	// Sources selects exact matches; it must be empty for Wildcard.
+	Sources []S
+	// Wildcard is considered only when no exact state/event transition exists.
+	Wildcard bool
+	// Event is matched by comparable equality, without normalization.
+	Event E
+	// To must identify a defined destination state.
+	To S
+	// Guards run in order before CheckedGuards and stop on the first rejection.
+	Guards []Guard[C]
+	// CheckedGuards run in order after Guards; an error takes precedence over rejection.
 	CheckedGuards []CheckedGuard[C]
-	Effects       []Effect
+	// Effects are planned between source exit and destination entry effects.
+	Effects []Effect
 }
 
 // Definition is the mutable input consumed by Compile.
 type Definition[S State, E Event, C any] struct {
-	Version     Version
-	Initial     S
-	States      []StateDefinition[S]
+	// Version must be nonempty; it is persisted, not a derived graph fingerprint.
+	Version Version
+	// Initial must identify a defined state; zero is allowed when that state exists.
+	Initial S
+	// States supplies unique identifiers and ordered inspection data.
+	States []StateDefinition[S]
+	// Transitions supplies deterministic exact/wildcard selection and graph order.
 	Transitions []TransitionDefinition[S, E, C]
 	// CloneContext isolates mutable context from each guard invocation. Callers
 	// using reference-bearing context MUST provide a deep clone function.
@@ -85,16 +120,25 @@ type Definition[S State, E Event, C any] struct {
 
 // Result is the complete output of a pure transition calculation.
 type Result[S State, E Event] struct {
+	// DefinitionVersion identifies the definition used for selection.
 	DefinitionVersion Version
-	Previous          S
-	Next              S
-	Event             E
-	TransitionID      TransitionID
-	Metadata          Metadata
-	Effects           []Effect
+	// Previous is the supplied source state, copied shallowly.
+	Previous S
+	// Next is the selected destination, copied shallowly.
+	Next S
+	// Event is the supplied event, not a normalized or authenticated value.
+	Event E
+	// TransitionID identifies the selected exact or wildcard transition.
+	TransitionID TransitionID
+	// Metadata preserves caller correlation/causation identifiers.
+	Metadata Metadata
+	// Effects is a fresh exit/transition/entry plan; no effect has been executed.
+	Effects []Effect
 }
 
-// Machine is an immutable compiled state machine safe for concurrent use.
+// Machine owns read-only compiled lookup structure. Concurrent operations are
+// safe when borrowed guards/cloners and state/event referents are stable and safe.
+// Use Compile; its zero value is not a compiled definition. It never runs effects.
 type Machine[S State, E Event, C any] struct {
 	version      Version
 	initial      S
@@ -136,10 +180,13 @@ var ErrContextClonePanic = errors.New("statemachine: context clone panicked")
 
 // GuardRejectedError preserves the selected transition and structured reason.
 type GuardRejectedError struct {
+	// TransitionID identifies the selected transition, without wildcard fallback.
 	TransitionID TransitionID
-	Rejection    Rejection
+	// Rejection preserves application detail; field access is not redacted.
+	Rejection Rejection
 }
 
+// Error returns ErrGuardRejected text without the application rejection detail.
 func (err *GuardRejectedError) Error() string {
 	return ErrGuardRejected.Error()
 }
@@ -151,9 +198,11 @@ func (err *GuardRejectedError) Unwrap() error {
 
 // GuardPanicError identifies the transition whose guard panicked.
 type GuardPanicError struct {
+	// TransitionID identifies the guard selection; no panic value is retained.
 	TransitionID TransitionID
 }
 
+// Error returns ErrGuardPanic text without the contained panic value.
 func (err *GuardPanicError) Error() string {
 	return ErrGuardPanic.Error()
 }
@@ -166,25 +215,35 @@ func (err *GuardPanicError) Unwrap() error {
 // GuardFailedError identifies the transition without rendering its possibly
 // sensitive underlying error.
 type GuardFailedError struct {
+	// TransitionID identifies the selected checked guard transition.
 	TransitionID TransitionID
-	Cause        error
+	// Cause is the raw operational error, available for trusted inspection.
+	Cause error
 }
 
+// Error returns ErrGuardFailed text without the underlying cause.
 func (err *GuardFailedError) Error() string {
 	return ErrGuardFailed.Error()
 }
 
+// Unwrap exposes raw causes to errors.Is/errors.As; causes may be sensitive.
 func (err *GuardFailedError) Unwrap() []error {
 	return []error{ErrGuardFailed, err.Cause}
 }
 
-// Compile validates and copies a definition into an immutable machine.
+// Compile validates and copies a definition under DefaultLimits. Collection and
+// payload copies do not deep-copy state/event referents or callback captures.
+// Invalid definitions return nil and DiagnosticsError; guard functions do not run.
 func Compile[S State, E Event, C any](definition Definition[S, E, C]) (*Machine[S, E, C], error) {
 	return CompileWithLimits(definition, DefaultLimits())
 }
 
 // CompileWithLimits validates and copies a definition using explicit resource
-// bounds.
+// bounds. Only zero aggregate payload/element limits select defaults; every
+// other field must be positive. Resource admission precedes copying and semantic
+// diagnostics, and may return only the admission failure. Identifiers must be
+// comparable at runtime and stable; arbitrary interface values may violate that.
+// No callback capture or opaque typed referent is validated or deep-cloned.
 func CompileWithLimits[S State, E Event, C any](definition Definition[S, E, C], limits Limits) (*Machine[S, E, C], error) {
 	defaults := DefaultLimits()
 	if limits.MaxCompiledEffectPayloadBytes == 0 {
@@ -203,6 +262,8 @@ func CompileWithLimits[S State, E Event, C any](definition Definition[S, E, C], 
 			Code: DiagnosticLimitExceeded, Message: "definition exceeds state or transition limit",
 		}}}
 	}
+	// Charge occurrences before proportional copying, including aliased payloads.
+	// Subtractive accounting avoids overflowing aggregate additions.
 	remainingElements := limits.MaxCompiledElements
 	remainingPayloadBytes := limits.MaxCompiledEffectPayloadBytes
 	reserve := func(elements, payloadBytes int) bool {
@@ -372,17 +433,22 @@ func CompileWithLimits[S State, E Event, C any](definition Definition[S, E, C], 
 	return machine, nil
 }
 
-// Graph is an immutable snapshot of an inspectable compiled definition.
-// Calling Machine.Graph returns a fresh deep copy.
+// Graph is a mutable inspection value in definition order. Machine.Graph copies
+// slices and payload bytes, not generic state/event referents or callback captures.
+// Editing returned structure does not edit the compiled lookup tables.
 type Graph[S State, E Event, C any] struct {
-	Version     Version
-	Initial     S
-	States      []StateDefinition[S]
+	// Version is the compiled identity, not a hash of this mutable inspection copy.
+	Version Version
+	// Initial is the definition starting state, copied shallowly.
+	Initial S
+	// States preserves definition order; effect buffers are independently copied.
+	States []StateDefinition[S]
+	// Transitions preserves definition order; slices and effect bytes are copied.
 	Transitions []TransitionDefinition[S, E, C]
 }
 
-// Graph returns a deep copy of the compiled transition graph in definition
-// order.
+// Graph returns independently copied collection structure and payload bytes in
+// definition order. State/event values and function referents remain shallow.
 func (machine *Machine[S, E, C]) Graph() Graph[S, E, C] {
 	graph := Graph[S, E, C]{
 		Version:     machine.version,
@@ -405,7 +471,14 @@ func (machine *Machine[S, E, C]) Graph() Graph[S, E, C] {
 	return graph
 }
 
-// Transition calculates one transition without performing IO.
+// Transition selects exact state/event matches before wildcard matches. A selected
+// guard rejection never falls through; terminal states always reject live work.
+// Ordinary guards run before checked guards; when CloneContext is configured,
+// it is invoked separately for each guard.
+// It returns fresh exit/transition/entry effect bytes, including self-transitions,
+// without executing effects. Guard purity and cancellation are caller obligations.
+// ctx is checked at entry and before each guard, not after the final guard; a
+// callback can finish after cancellation and still yield a successful Result.
 func (machine *Machine[S, E, C]) Transition(ctx context.Context, current S, event E, transitionContext C, metadata Metadata) (Result[S, E], error) {
 	if err := ctx.Err(); err != nil {
 		return Result[S, E]{}, err
@@ -420,6 +493,8 @@ func (machine *Machine[S, E, C]) Transition(ctx context.Context, current S, even
 	if state.Terminal {
 		return Result[S, E]{}, ErrTerminalState
 	}
+	// Select before running guards: rejection of an exact edge cannot authorize
+	// the more general wildcard edge.
 	transition, ok := machine.exact[current][event]
 	if !ok {
 		transition, ok = machine.wildcard[event]

@@ -6,24 +6,34 @@ import "fmt"
 type HistoryFailure string
 
 const (
-	HistorySequenceMismatch   HistoryFailure = "sequence_mismatch"
-	HistoryStateMismatch      HistoryFailure = "state_mismatch"
-	HistoryInstanceMismatch   HistoryFailure = "instance_mismatch"
-	HistoryMissingIdentity    HistoryFailure = "missing_identity"
-	HistoryLimitExceeded      HistoryFailure = "limit_exceeded"
+	// HistorySequenceMismatch reports a nonconsecutive stored lock sequence.
+	HistorySequenceMismatch HistoryFailure = "sequence_mismatch"
+	// HistoryStateMismatch reports a prior state inconsistent with the preceding boundary.
+	HistoryStateMismatch HistoryFailure = "state_mismatch"
+	// HistoryInstanceMismatch reports an entry belonging to another instance.
+	HistoryInstanceMismatch HistoryFailure = "instance_mismatch"
+	// HistoryMissingIdentity reports empty snapshot or result identities.
+	HistoryMissingIdentity HistoryFailure = "missing_identity"
+	// HistoryLimitExceeded reports invalid entry limits or excess history length.
+	HistoryLimitExceeded HistoryFailure = "limit_exceeded"
+	// HistoryDefinitionMismatch reports version or selected-transition topology mismatch.
 	HistoryDefinitionMismatch HistoryFailure = "definition_mismatch"
 )
 
 // HistoryError identifies the zero-based entry that violates replay
 // continuity. Index is -1 when the snapshot itself is malformed.
 type HistoryError struct {
-	Index   int
+	// Index is the zero-based entry, or -1 for a snapshot/limit failure.
+	Index int
+	// Failure is a structured continuity or machine-selection classification.
 	Failure HistoryFailure
 }
 
-// ValidateHistory verifies structural continuity and proves that every stored
-// result is compatible with this exact compiled definition. History from an
-// older definition must be migrated before validation.
+// ValidateHistory checks continuity and this machine version, selected event
+// transition ID and destination. Older versions must be migrated first. It does
+// not rerun guards, verify effect payloads or authenticate history. In particular,
+// wildcard records are not checked for terminal or unknown source eligibility;
+// passing this check is narrower than proving a valid live Transition execution.
 func (machine *Machine[S, E, C]) ValidateHistory(snapshot Snapshot[S], entries []HistoryEntry[S, E]) (Snapshot[S], error) {
 	if snapshot.DefinitionVersion != machine.version {
 		return Snapshot[S]{}, &HistoryError{Index: -1, Failure: HistoryDefinitionMismatch}
@@ -48,6 +58,7 @@ func (machine *Machine[S, E, C]) ValidateHistory(snapshot Snapshot[S], entries [
 	return final, nil
 }
 
+// Error includes the entry index, not state/event data or the Failure label.
 func (err *HistoryError) Error() string {
 	return fmt.Sprintf("statemachine: history entry %d is invalid", err.Index)
 }
@@ -58,7 +69,11 @@ func ValidateHistory[S State, E Event](snapshot Snapshot[S], entries []HistoryEn
 	return ValidateHistoryWithLimit(snapshot, entries, DefaultLimits().MaxReplayInputs)
 }
 
-// ValidateHistoryWithLimit verifies history with an explicit entry bound.
+// ValidateHistoryWithLimit checks nonempty identities, instance/sequence/prior
+// state continuity, and a positive entry bound. Entry definition versions may
+// change. It returns zero output on failure, does not mutate entries or run
+// guards/effects, and does not prove machine membership or authenticate data.
+// uint64 sequence arithmetic is not overflow-rejecting; callers own that range.
 func ValidateHistoryWithLimit[S State, E Event](snapshot Snapshot[S], entries []HistoryEntry[S, E], limit int) (Snapshot[S], error) {
 	if snapshot.InstanceID == "" || snapshot.DefinitionVersion == "" {
 		return Snapshot[S]{}, &HistoryError{Index: -1, Failure: HistoryMissingIdentity}

@@ -28,6 +28,8 @@ func wrapError(operation string, cause error) error {
 	return &operationError{operation: operation, cause: cause}
 }
 
+// Cleanup must not inherit the failed/canceled operation context. This bounded
+// rollback is best-effort, and cannot disprove an uncertain successful commit.
 func rollback(tx transaction) {
 	ctx, cancel := context.WithTimeout(context.Background(), cleanupTimeout)
 	defer cancel()
