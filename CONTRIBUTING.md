@@ -40,7 +40,7 @@ that hide a failing package.
 
 ## Verification
 
-Classify changes under [proportional assurance](AGENTS.md#proportional-assurance).
+Classify changes under [proportional assurance](AGENTS.md#scope-and-verification).
 The root module collects complete native coverage in explicit evidence mode.
 Failed tests, missing packages and invalid or absent profiles remain errors;
 behavioral risk review replaces universal exact-percentage acceptance.
