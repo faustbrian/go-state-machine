@@ -1,5 +1,7 @@
 # Boundaries
 
+[Documentation index](README.md)
+
 This library answers one question: given a compiled finite-state definition,
 current state, event, typed context, and metadata, which transition is selected
 and which effects are planned?
@@ -18,3 +20,5 @@ Hierarchical states, parallel regions, history pseudo-states, and timed
 transitions are intentionally absent. Do not approximate them with hidden
 callbacks or magic state names. A future addition would need complete selection,
 entry/exit, replay, persistence, diagram, and concurrency semantics.
+
+Continue with [API reference](api.md).

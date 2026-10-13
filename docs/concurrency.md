@@ -1,5 +1,7 @@
 # Concurrency semantics
 
+[Documentation index](README.md)
+
 Compiled machines contain copied definitions and read-only lookup tables. They
 are safe for concurrent `Transition`, `Replay`, and `Graph` calls. Returned
 graphs, effects, and persisted history payloads are copies.
@@ -59,3 +61,5 @@ Cancellation is checked before transition selection, before guards, before
 effect handling, before relay publication, and by store calls. Cancellation
 does not roll back work that an external handler or publisher completed before
 returning.
+
+Continue with [API reference](api.md).

@@ -1,5 +1,7 @@
 # Adoption guide
 
+[Documentation index](README.md)
+
 ## 1. Identify a real finite-state model
 
 List stable states, triggering events, terminal states, and legal edges. If the
@@ -40,3 +42,5 @@ acknowledgement.
 
 Persist definition versions from day one. Add migration hooks and fixtures
 before renaming serialized state or event identifiers.
+
+Continue with [API reference](api.md).

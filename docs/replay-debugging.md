@@ -1,5 +1,7 @@
 # Replay and debugging
 
+[Documentation index](README.md)
+
 `Machine.Replay` starts at the compiled initial state. `ReplayFrom` starts at a
 snapshot state. Both call the same pure transition logic as live calculation,
 so guards and transition precedence remain identical.
@@ -37,3 +39,5 @@ Debugging procedure:
 
 Resource limits bound replay length and metadata. Tighten them with
 `CompileWithLimits` for untrusted inputs.
+
+Continue with [API reference](api.md).

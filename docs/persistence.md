@@ -1,5 +1,7 @@
 # Persistence
 
+[Documentation index](README.md)
+
 The root `Store` contract keeps persistence optional. Every store exposes its
 guarantees through `Capabilities`.
 
@@ -74,3 +76,5 @@ application-owned observability when operational diagnosis requires it.
 
 Call `statemachinetest.StoreContract` from custom store tests. The contract does
 not replace backend-specific transaction, crash, and contention tests.
+
+Continue with [API reference](api.md).

@@ -1,5 +1,7 @@
 # Architecture and diagrams
 
+[Documentation index](README.md)
+
 The library separates pure selection from every side effect:
 
 ```mermaid
@@ -42,3 +44,5 @@ Use `machine.Graph()` with `diagram.Renderer` to generate definition-specific
 Mermaid or Graphviz documentation in stable definition order. Use the checked
 export methods for serialized or otherwise untrusted graph imports; they reject
 unknown references and bound graph shape, labels, and output bytes.
+
+Continue with [API reference](api.md).

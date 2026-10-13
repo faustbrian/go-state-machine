@@ -1,5 +1,7 @@
 # FAQ
 
+[Documentation index](README.md)
+
 ## Why are states and events generic comparable types?
 
 Applications keep compile-time distinctions instead of passing arbitrary
@@ -47,3 +49,5 @@ and nondeterministic I/O. Preload required facts into typed context.
 
 Unreachable nodes usually indicate stale or incomplete domain definitions and
 make diagrams and evolution misleading.
+
+Continue with [API reference](api.md).

@@ -1,5 +1,7 @@
 # State Machine Threat Model v2
 
+[Documentation index](../README.md)
+
 Status: active
 
 Model version: 2
@@ -116,3 +118,5 @@ A compromised process can read in-memory typed values and callback inputs. A
 compromised database administrator can read durable plaintext state and effect
 payloads. Applications needing confidentiality at either boundary must encrypt
 values before passing them to this library and own key management separately.
+
+Continue with [Operations](../operations.md).

@@ -1,5 +1,7 @@
 # Quick start
 
+[Documentation index](README.md)
+
 Define distinct state and event types, compile once, and reuse the resulting
 machine concurrently.
 
@@ -55,3 +57,5 @@ command explicitly.
 
 Use `CompileWithLimits` when an application needs tighter resource bounds than
 `DefaultLimits`. See runnable examples in `examples_test.go`.
+
+Continue with [API reference](api.md).

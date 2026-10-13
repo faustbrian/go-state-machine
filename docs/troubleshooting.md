@@ -1,5 +1,7 @@
 # Troubleshooting
 
+[Documentation index](README.md)
+
 ## Compilation fails
 
 Use `errors.As` to inspect `*statemachine.DiagnosticsError` and its complete
@@ -46,3 +48,5 @@ The library owns no worker lifecycle. Stop the application's worker loop,
 cancel in-flight contexts, wait for handlers and publishers to return, and close
 the caller-owned database pool last. A context cancellation cannot reverse an
 external side effect that completed before the collaborator returned.
+
+Continue with [API reference](api.md).

@@ -1,5 +1,7 @@
 # API reference
 
+[Documentation index](README.md)
+
 This page groups the complete exported surface by responsibility. GoDoc remains
 the source for exact signatures.
 
@@ -91,3 +93,5 @@ limit violations.
 `statemachinetest.StoreContract` and `RunnerContract` are reusable backend and
 wrapper tests. `StoreFixture`, `RunnerFactory`, and `EffectExecutor` provide
 their typed setup contracts.
+
+Continue with [Adoption guide](adoption.md).

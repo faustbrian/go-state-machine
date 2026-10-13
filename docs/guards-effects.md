@@ -1,5 +1,7 @@
 # Guards and effects
 
+[Documentation index](README.md)
+
 ## Guards
 
 A guard receives `context.Context` and the definition's typed context value. It
@@ -77,3 +79,5 @@ A canceled context returns its error without recording an unattempted effect.
 An attempt completed before cancellation retains its record; cancellation then
 stops the call before the next effect. External effects already performed by a
 handler cannot be rolled back by the runner.
+
+Continue with [API reference](api.md).

@@ -1,8 +1,10 @@
 # Documentation
 
+[Package README](../README.md)
+
 - [Quick start](quickstart.md)
 - [Compiler-checked examples](../examples_test.go)
-- [Testing helpers](https://pkg.go.dev/github.com/faustbrian/go-state-machine/statemachinetest)
+- [Testing helpers](https://pkg.go.dev/github.com/faustbrian/go-state-machine/v2/statemachinetest)
 - [API reference](api.md)
 - [Architecture and diagrams](architecture.md)
 - [Guards and effects](guards-effects.md)
@@ -27,3 +29,13 @@
 
 The root package has no database, queue, or transport dependency. Import only
 the optional packages an application needs.
+
+## Ecosystem navigation
+
+See the [versioned Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.8.4/docs/ecosystem/README.md) for package
+selection, explicit ownership, and compatibility guidance.
+
+## Additional guides and reference
+
+- [State Machine published-source security disposition](security/release-disposition.md)
+- [Source documentation audit](source-documentation-audit.md)

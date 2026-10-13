@@ -2,9 +2,8 @@
 
 [![CI](https://github.com/faustbrian/go-state-machine/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-state-machine/actions/workflows/ci.yml)
 [![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-state-machine/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-risk_based_evidence-blue)](CONTRIBUTING.md#verification)
 [![Mutation](https://img.shields.io/badge/mutation-selected_assurance-blue)](CONTRIBUTING.md#verification)
-[![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
+[![Documentation](https://img.shields.io/badge/docs-structural_checks_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-state-machine/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-state-machine/v2)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-state-machine?sort=semver)](https://github.com/faustbrian/go-state-machine/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
@@ -136,8 +135,8 @@ questions and defects, [SECURITY.md](SECURITY.md) for private vulnerability
 reports, and the [changelog](CHANGELOG.md) for user-visible changes.
 
 For ecosystem-wide selection and ownership guidance, see the versioned
-[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
-and its [Domain utilities family](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/design-language.md#package-families-and-selection).
+[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.8.4/docs/ecosystem/README.md)
+and its [Domain utilities family](https://github.com/faustbrian/go-library-tools/blob/v1.8.4/docs/ecosystem/design-language.md#package-families-and-selection).
 
 ## Local verification
 

@@ -1,5 +1,7 @@
 # Outbox integration
 
+[Documentation index](README.md)
+
 PostgreSQL inserts planned effects in `state_machine_outbox` in the same
 transaction as current state and history. `postgres.Store` also implements the
 `outbox.Store` lease contract.
@@ -38,3 +40,5 @@ eligibility but does not time-check acknowledgement/retry/dead-letter updates:
 an expired token can still complete before a new claim replaces it. Supply
 unique generation tokens and do not infer global or effect-index publication
 order from `SKIP LOCKED`.
+
+Continue with [API reference](api.md).

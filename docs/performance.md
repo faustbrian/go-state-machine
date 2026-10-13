@@ -1,5 +1,7 @@
 # Performance
 
+[Documentation index](README.md)
+
 State-machine performance has two distinct boundaries: compiling a definition
 and operating a compiled machine. Compile once during application setup and
 reuse the immutable result across requests or workers.
@@ -41,3 +43,5 @@ Measure representative definitions, guard work, effect payloads, history
 lengths, database topology, and publisher behavior before setting an
 application budget. Compare results using the same Go version, CPU, worker
 count, database version, and benchmark duration.
+
+Continue with [API reference](api.md).

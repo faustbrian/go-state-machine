@@ -1,5 +1,7 @@
 # Releasing
 
+[Documentation index](README.md)
+
 The active root source is an unpublished v2 release candidate. Do not publish
 a v2 tag until the repository release gates pass, the v2 API and security
 behavior are approved, and release authority covers the selected source.

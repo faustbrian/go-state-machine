@@ -1,5 +1,7 @@
 # Definition evolution
 
+[Documentation index](README.md)
+
 Definition versions are persisted with current state and every history result.
 Changing identifiers requires an explicit migration; changing a Go constant
 name alone does not.
@@ -56,3 +58,5 @@ Recommended upgrade sequence:
 7. enable the new compiled definition.
 
 The library does not guess whether two definitions are semantically compatible.
+
+Continue with [API reference](api.md).

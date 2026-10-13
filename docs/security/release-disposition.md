@@ -1,5 +1,7 @@
 # State Machine published-source security disposition
 
+[Documentation index](../README.md)
+
 Reviewed: 2026-10-07. Owner: go-state-machine maintainers.
 
 ## Observed released sources

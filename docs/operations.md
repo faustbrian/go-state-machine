@@ -1,5 +1,7 @@
 # Operations
 
+[Documentation index](README.md)
+
 The root machine, diagram renderer, runner, and memory store start no background
 goroutines and expose no shutdown method. Applications own every call, context,
 effect handler, publisher, database pool, and worker loop.
@@ -45,3 +47,5 @@ the history against the intended compiled definition, and resume from the
 persisted lock version. Expired outbox leases may be reclaimed. Investigate
 dead letters before replaying them, because permanent failures are deliberately
 not rescheduled by the relay.
+
+Continue with [API reference](api.md).
