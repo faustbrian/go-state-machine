@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file. The format is
 based on Keep a Changelog, and the project follows Semantic Versioning.
 
+## 2.0.1 - 2026-10-22
+
+### Changed
+
+- Publish the current source and documentation with a fresh immutable tag.
+
 ## [Unreleased]
 
 ### Documentation
